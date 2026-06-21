@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+
+/* ---- Design tokens (from Itelgie / spec design system) ---- */
+@theme {
+  --color-page: #f0f2f5;
+  --color-card: #ffffff;
+  --color-navy: #1a2235;
+  --color-navy-soft: #2a3450;
+  --color-ink: #1a2235;
+  --color-muted: #6b7280;
+  --color-line: #e7e9ee;
+
+  --color-green: #4caf82;
+  --color-green-soft: #e6f5ee;
+  --color-amber: #f0a830;
+  --color-amber-soft: #fdf2dd;
+  --color-red: #e2574c;
+  --color-red-soft: #fbe7e5;
+  --color-blue: #3b82f6;
+  --color-blue-soft: #e6effe;
+
+  --radius-card: 16px;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* thin scrollbars for the gantt / scroll areas */
+.scroll-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #d3d7e0;
+  border-radius: 8px;
+}
