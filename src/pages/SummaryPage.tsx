@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProject } from './ProjectLayout'
 import { Card, Button, RagDot } from '../components/ui/primitives'
@@ -22,6 +23,8 @@ export function SummaryPage() {
   const next = nextMilestone(p)
   const cap = teamCapacity(p)
   const issues = issueCounts(p)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploaded, setUploaded] = useState<string | null>(null)
 
   return (
     <div className="grid gap-5">
@@ -37,17 +40,30 @@ export function SummaryPage() {
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2.5">
-        <Button variant="soft" onClick={() => navigate('../schedule')}>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Button variant="soft" onClick={() => navigate(`/projects/${p.id}/schedule`)}>
           ＋ Add task
         </Button>
-        <Button variant="soft" onClick={() => navigate('../setup')}>
+        <Button variant="soft" onClick={() => navigate(`/projects/${p.id}/setup`)}>
           ⚠ Log risk
         </Button>
-        <Button variant="soft">📎 Upload document</Button>
-        <Button variant="soft" onClick={() => navigate('../reports')}>
+        <Button variant="soft" onClick={() => fileRef.current?.click()}>
+          📎 Upload document
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => setUploaded(e.target.files?.[0]?.name ?? null)}
+        />
+        <Button variant="soft" onClick={() => navigate(`/projects/${p.id}/reports`)}>
           📊 Generate report
         </Button>
+        {uploaded && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-soft px-3 py-1.5 text-xs font-medium text-green">
+            ✓ Uploaded: {uploaded}
+          </span>
+        )}
       </div>
 
       <Card>

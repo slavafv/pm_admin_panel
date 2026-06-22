@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useProject } from './ProjectLayout'
 import { useStore } from '../store/useStore'
 import { roleMeta } from '../config/roles'
@@ -144,6 +145,7 @@ function DirectorGeneral({ p }: { p: Project }) {
 function DepartmentHead({ p }: { p: Project }) {
   const issues = issueCounts(p)
   const variance = budgetVariance(p)
+  const setRole = useStore((s) => s.setRole)
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <Card>
@@ -194,7 +196,12 @@ function DepartmentHead({ p }: { p: Project }) {
               </div>
             )
           })}
-          <button className="text-left text-xs font-semibold text-navy">View all →</button>
+          <button
+            onClick={() => setRole('project_manager')}
+            className="text-left text-xs font-semibold text-navy hover:underline"
+          >
+            View all in PM execution view →
+          </button>
         </div>
       </Card>
 
@@ -240,6 +247,7 @@ function DepartmentHead({ p }: { p: Project }) {
 /* ---------------- Project Manager ---------------- */
 function ProjectManager({ p }: { p: Project }) {
   const next = nextMilestone(p)
+  const navigate = useNavigate()
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <Card className="lg:col-span-2">
@@ -279,7 +287,7 @@ function ProjectManager({ p }: { p: Project }) {
           <div className="text-5xl font-extrabold text-navy">{next ? next.days : '—'}</div>
           <div className="mt-1 text-sm text-muted">days</div>
           <div className="mt-2 text-sm font-semibold">until {next?.milestone.name}</div>
-          <Button variant="soft" className="mt-4">
+          <Button variant="soft" className="mt-4" onClick={() => navigate(`/projects/${p.id}/schedule`)}>
             View milestone details
           </Button>
         </div>

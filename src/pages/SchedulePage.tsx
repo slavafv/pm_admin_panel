@@ -24,7 +24,7 @@ export function SchedulePage() {
             </button>
           ))}
         </div>
-        <Button>✎ Edit workload</Button>
+        <Button onClick={() => setView('gantt')}>✎ Edit workload</Button>
       </div>
 
       {view === 'gantt' ? (

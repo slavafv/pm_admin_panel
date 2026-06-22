@@ -21,6 +21,7 @@ export function RoleSwitcher() {
   return (
     <div className="relative" ref={ref}>
       <button
+        data-testid="role-switcher"
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-3 rounded-xl border border-line bg-card px-3 py-1.5 transition hover:bg-[#f7f8fb]"
       >

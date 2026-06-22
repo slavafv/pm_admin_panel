@@ -75,6 +75,20 @@ describe('routes render without crashing', () => {
     expect(screen.getByText('Resource utilization')).toBeInTheDocument()
   })
 
+  it('summary quick-action "Add task" navigates to the schedule (not a dead route)', () => {
+    renderAt('/projects/rak-wwtp-1')
+    fireEvent.click(screen.getByText('＋ Add task'))
+    // Schedule screen renders the "Edit workload" action + Gantt timeline
+    expect(screen.getByText('✎ Edit workload')).toBeInTheDocument()
+    expect(screen.queryByText('Project not found.')).not.toBeInTheDocument()
+  })
+
+  it('summary quick-action "Generate report" navigates to reports', () => {
+    renderAt('/projects/rak-wwtp-1')
+    fireEvent.click(screen.getByText('📊 Generate report'))
+    expect(screen.getByText('Project status report')).toBeInTheDocument()
+  })
+
   it('unknown project id shows a not-found fallback', () => {
     renderAt('/projects/does-not-exist')
     expect(screen.getByText('Project not found.')).toBeInTheDocument()

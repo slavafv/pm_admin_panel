@@ -83,8 +83,8 @@ export function Avatar({
 }) {
   return (
     <div
-      className={clsx('grid place-items-center rounded-full font-semibold text-white', ring && 'ring-2 ring-white')}
-      style={{ background: color, width: size, height: size, fontSize: size * 0.36 }}
+      className={clsx('grid shrink-0 place-items-center rounded-full font-semibold text-white', ring && 'ring-2 ring-white')}
+      style={{ background: color, width: size, height: size, minWidth: size, fontSize: size * 0.36 }}
     >
       {initials}
     </div>
