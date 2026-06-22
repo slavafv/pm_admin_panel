@@ -1,4 +1,4 @@
-import type { Project, PortfolioCard, Phase } from './types'
+import type { Project, Phase, RAG, TeamMember } from './types'
 
 /** Build sensible, domain-neutral stages spanning a project's duration.
  *  Used for projects created at runtime so they don't inherit the hero
@@ -62,6 +62,9 @@ export const rakProject: Project = {
   name: 'RAK Wastewater Treatment Plant — Phase 1',
   department: 'RAK Public Services Department',
   contractType: 'PPP — Public-Private Partnership',
+  domain: 'Water',
+  location: 'Al Hamra Industrial Zone, RAK',
+  description: 'Design, construction and commissioning of a 60,000 m³/day wastewater treatment plant serving the southern districts of Ras Al Khaimah.',
   startMonthLabel: 'Jan 2026',
   startYear: 2026,
   startMonthIndex: 0,
@@ -70,11 +73,11 @@ export const rakProject: Project = {
   spentBudget: 4_200_000,
   pmId: 'ahmed',
   tags: ['Infrastructure', 'Water', 'Sustainability'],
-  status: 'active',
+  status: 'delivery',
   overallProgress: 8,
   currentPhaseId: 'design',
   health: 'amber',
-  healthNote: 'On track — attention needed',
+  healthNote: 'Needs attention',
 
   team,
 
@@ -174,6 +177,12 @@ export const rakProject: Project = {
       mitigation: '14M AED contingency',
       owner: 'Fatima Al Rashidi',
     },
+  ],
+
+  assumptions: [
+    { text: 'Federal environmental approval granted by Q2 2026', owner: 'Legal team', status: 'Open' },
+    { text: 'EtihadWE connection capacity available at commissioning', owner: 'Ahmed Al Mansouri', status: 'Open' },
+    { text: 'Land handover completed before design start', owner: 'RAK Legal', status: 'Validated' },
   ],
 
   phases: [
@@ -281,6 +290,9 @@ export const alHamraProject: Project = {
   name: 'Al Hamra Masterplan — Road Network',
   department: 'RAK Urban Planning Dept',
   contractType: 'Design-Build',
+  domain: 'Urban Development',
+  location: 'Al Hamra, RAK',
+  description: 'Masterplanned road network for the Al Hamra district — design and construction of arterial roads, junctions and utilities corridors.',
   startMonthLabel: 'Q3 2026 (planned)',
   startYear: 2026,
   startMonthIndex: 6,
@@ -289,11 +301,11 @@ export const alHamraProject: Project = {
   spentBudget: 0,
   pmId: 'omar',
   tags: ['Urban Development', 'Transport', 'Masterplan'],
-  status: 'planning',
+  status: 'presale',
   overallProgress: 0,
   currentPhaseId: 'planning',
   health: 'green',
-  healthNote: 'Planning — awaiting start approval',
+  healthNote: 'On track',
   team: alHamraTeam,
   internalStakeholders: [
     { name: 'Eng. Khalid Al Zaabi', title: 'Head, Urban Planning Dept', notification: 'Phase updates' },
@@ -314,6 +326,9 @@ export const alHamraProject: Project = {
   ],
   risks: [
     { risk: 'Right-of-way acquisition delay', probability: 'Medium', impact: 'High', mitigation: 'Early land negotiations', owner: 'Omar Al Khalifa' },
+  ],
+  assumptions: [
+    { text: 'Masterplan approved by RAK Urban Planning in 2026', owner: 'Omar Al Khalifa', status: 'Open' },
   ],
   phases: genericPhases(30).map((p, i) => ({ ...p, name: ['Design & masterplanning', 'Construction', 'Handover'][i] })),
   milestones: [
@@ -348,6 +363,9 @@ export const barjeelProject: Project = {
   name: 'Barjeel Retrofit — Batch 1',
   department: 'RAK Energy Efficiency Office',
   contractType: 'Framework',
+  domain: 'Energy',
+  location: 'Multiple government buildings, RAK',
+  description: 'Energy-efficiency retrofit of the first batch of RAK government buildings — HVAC, lighting and controls upgrade with measured savings.',
   startMonthLabel: 'Jan 2024',
   startYear: 2024,
   startMonthIndex: 0,
@@ -360,7 +378,7 @@ export const barjeelProject: Project = {
   overallProgress: 100,
   currentPhaseId: 'closeout',
   health: 'green',
-  healthNote: 'Completed — delivered Dec 2024',
+  healthNote: 'Completed',
   team: barjeelTeam,
   internalStakeholders: [
     { name: 'H.E. Munther bin Shekar', title: 'Director General, RAK Municipality', notification: 'Executive summary' },
@@ -378,6 +396,7 @@ export const barjeelProject: Project = {
   ],
   dependencies: [],
   risks: [],
+  assumptions: [],
   phases: [
     { id: 'audit', name: 'Audit & design', startMonth: 0, endMonth: 2, progressPct: 100, status: 'complete' },
     { id: 'retrofit', name: 'Retrofit works', startMonth: 3, endMonth: 9, progressPct: 100, status: 'complete' },
@@ -403,26 +422,99 @@ export const barjeelProject: Project = {
   ],
 }
 
-export const allProjects: Project[] = [rakProject, alHamraProject, barjeelProject]
+/* ---------------------------------------------------------------------------
+ * Extra portfolio projects (lighter, but fully openable) — give the list
+ * enough volume to show pagination and a realistic RAK portfolio.
+ * ------------------------------------------------------------------------- */
+interface MakeArgs {
+  id: string
+  name: string
+  department: string
+  contractType: string
+  domain: string
+  location: string
+  description: string
+  startYear: number
+  startMonthIndex: number
+  startMonthLabel: string
+  durationMonths: number
+  totalBudget: number
+  spentBudget?: number
+  status: Project['status']
+  overallProgress: number
+  health: RAG
+  healthNote: string
+  pm: { name: string; initials: string; color: string }
+}
 
-function cardFor(p: Project, startLabel: string): PortfolioCard {
+function makeProject(a: MakeArgs): Project {
+  const phases = genericPhases(a.durationMonths)
+  const allComplete = a.status === 'completed'
+  const builtPhases = phases.map((ph, i) => {
+    if (allComplete) return { ...ph, progressPct: 100, status: 'complete' as const }
+    if (a.status === 'delivery' && i === 0) return { ...ph, progressPct: a.overallProgress > 0 ? 40 : 0, status: 'in_progress' as const }
+    return ph
+  })
+  const pm: TeamMember = {
+    id: `${a.id}-pm`,
+    name: a.pm.name,
+    role: 'Project Manager',
+    access: 'Full access',
+    initials: a.pm.initials,
+    color: a.pm.color,
+    fteByPhase: builtPhases.map(() => 1),
+    capacity: 1,
+  }
+  const splits = builtPhases.map(() => 1 / builtPhases.length)
   return {
-    id: p.id,
-    name: p.name,
-    department: p.department,
-    status: p.status,
-    budget: p.totalBudget,
-    contractType: p.contractType.includes('PPP') ? 'PPP Contract' : p.contractType,
-    startLabel,
-    durationMonths: p.durationMonths,
-    tags: p.tags,
-    progress: p.overallProgress,
-    teamInitials: p.team.map((t) => ({ initials: t.initials, color: t.color })),
+    id: a.id,
+    name: a.name,
+    department: a.department,
+    contractType: a.contractType,
+    domain: a.domain,
+    location: a.location,
+    description: a.description,
+    startMonthLabel: a.startMonthLabel,
+    startYear: a.startYear,
+    startMonthIndex: a.startMonthIndex,
+    durationMonths: a.durationMonths,
+    totalBudget: a.totalBudget,
+    spentBudget: a.spentBudget ?? (allComplete ? a.totalBudget : 0),
+    pmId: pm.id,
+    tags: [a.domain],
+    status: a.status,
+    overallProgress: a.overallProgress,
+    currentPhaseId: allComplete ? builtPhases[builtPhases.length - 1].id : builtPhases[0].id,
+    health: a.health,
+    healthNote: a.healthNote,
+    team: [pm],
+    internalStakeholders: [],
+    externalPartners: [],
+    budgetLines: builtPhases.map((ph, i) => ({ phase: ph.name, allocated: Math.round((a.totalBudget * splits[i]) / 1000) * 1000, category: 'Allocated' })),
+    equipment: [],
+    dependencies: [],
+    risks: [],
+    assumptions: [],
+    phases: builtPhases,
+    milestones: [
+      { id: 'k', name: 'Kickoff', month: builtPhases[0].startMonth, rag: 'green', state: allComplete ? 'done' : 'scheduled' },
+      { id: 'c', name: 'Completion', month: builtPhases[builtPhases.length - 1].endMonth, rag: 'green', state: allComplete ? 'done' : 'scheduled' },
+    ],
+    issues: [],
+    tasks: { todo: allComplete ? 0 : 8, inProgress: a.status === 'delivery' ? 4 : 0, done: allComplete ? 30 : 0 },
+    inProgressTasks: [],
+    burn: [],
+    kpis: [{ label: 'Overall completion', current: a.overallProgress, target: 100, unit: '%' }],
   }
 }
 
-export const portfolio: PortfolioCard[] = [
-  cardFor(rakProject, 'Start 01.01.2026 (36 months)'),
-  cardFor(alHamraProject, 'Expected start Q3 2026'),
-  cardFor(barjeelProject, 'Completed Dec 2024'),
+const extraProjects: Project[] = [
+  makeProject({ id: 'corniche-boardwalk', name: 'RAK Corniche Boardwalk', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Urban Development', location: 'RAK Corniche', description: 'New 4 km waterfront boardwalk with landscaping and public amenities.', startYear: 2026, startMonthIndex: 8, startMonthLabel: 'Sep 2026 (planned)', durationMonths: 18, totalBudget: 58_000_000, status: 'presale', overallProgress: 0, health: 'green', healthNote: 'On track', pm: { name: 'Yousef Karim', initials: 'YK', color: '#3b82f6' } }),
+  makeProject({ id: 'julphar-cooling', name: 'Julphar District Cooling', department: 'RAK Public Services Department', contractType: 'EPC — Engineering, Procurement, Construction', domain: 'Energy', location: 'Julphar District, RAK', description: 'District cooling plant and distribution network for the Julphar towers area.', startYear: 2025, startMonthIndex: 9, startMonthLabel: 'Oct 2025', durationMonths: 28, totalBudget: 210_000_000, spentBudget: 64_000_000, status: 'delivery', overallProgress: 31, health: 'amber', healthNote: 'Needs attention', pm: { name: 'Aisha Obaid', initials: 'AO', color: '#4caf82' } }),
+  makeProject({ id: 'schools-solar', name: 'RAK Schools Solar Rollout', department: 'RAK Energy Efficiency Office', contractType: 'Framework', domain: 'Energy', location: '40 schools, RAK', description: 'Rooftop solar PV across 40 public schools with net-metering.', startYear: 2026, startMonthIndex: 1, startMonthLabel: 'Feb 2026', durationMonths: 20, totalBudget: 47_500_000, spentBudget: 6_300_000, status: 'onhold', overallProgress: 12, health: 'red', healthNote: 'At risk', pm: { name: 'Tariq Nasser', initials: 'TN', color: '#e2574c' } }),
+  makeProject({ id: 'marjan-drainage', name: 'Marjan Island Drainage', department: 'RAK Public Services Department', contractType: 'PPP — Public-Private Partnership', domain: 'Water', location: 'Al Marjan Island, RAK', description: 'Stormwater drainage and pumping network for Al Marjan Island.', startYear: 2025, startMonthIndex: 3, startMonthLabel: 'Apr 2025', durationMonths: 30, totalBudget: 162_000_000, spentBudget: 88_000_000, status: 'delivery', overallProgress: 54, health: 'green', healthNote: 'On track', pm: { name: 'Khalid Saif', initials: 'KS', color: '#1a2235' } }),
+  makeProject({ id: 'heritage-souq', name: 'Heritage Souq Restoration', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Buildings', location: 'Old Town, RAK', description: 'Restoration of the historic souq with conservation-grade works.', startYear: 2023, startMonthIndex: 5, startMonthLabel: 'Jun 2023', durationMonths: 18, totalBudget: 33_400_000, status: 'completed', overallProgress: 100, health: 'green', healthNote: 'Completed', pm: { name: 'Maryam Ali', initials: 'MA', color: '#f0a830' } }),
+  makeProject({ id: 'smart-traffic', name: 'RAK Smart Traffic — Phase 1', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Transport', location: 'City-wide, RAK', description: 'Adaptive traffic signals and sensors across 25 key intersections.', startYear: 2026, startMonthIndex: 10, startMonthLabel: 'Nov 2026 (planned)', durationMonths: 16, totalBudget: 29_000_000, status: 'presale', overallProgress: 0, health: 'green', healthNote: 'On track', pm: { name: 'Hessa Rashed', initials: 'HR', color: '#3b82f6' } }),
 ]
+
+export const allProjects: Project[] = [rakProject, alHamraProject, barjeelProject, ...extraProjects]

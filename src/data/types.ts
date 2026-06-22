@@ -1,5 +1,6 @@
 export type RAG = 'green' | 'amber' | 'red'
-export type ProjectStatus = 'planning' | 'active' | 'onhold' | 'completed'
+/** Lifecycle stage of a project (delivery pipeline, not health). */
+export type ProjectStatus = 'presale' | 'delivery' | 'onhold' | 'completed'
 
 export type RoleId = 'director_general' | 'department_head' | 'project_manager'
 
@@ -115,11 +116,21 @@ export interface KPI {
   note?: string
 }
 
+/** Assumptions log entry — things taken as true that need validation. */
+export interface Assumption {
+  text: string
+  owner: string
+  status: 'Open' | 'Validated' | 'Rejected'
+}
+
 export interface Project {
   id: string
   name: string
   department: string
   contractType: string
+  domain: string // single classification, e.g. "Water", "Urban Development"
+  location?: string
+  description?: string
   startMonthLabel: string
   startYear: number
   startMonthIndex: number // 0 = Jan of startYear
@@ -141,6 +152,7 @@ export interface Project {
   equipment: Equipment[]
   dependencies: Dependency[]
   risks: Risk[]
+  assumptions: Assumption[]
   phases: Phase[]
   milestones: Milestone[]
   issues: Issue[]
@@ -148,19 +160,4 @@ export interface Project {
   inProgressTasks: { title: string; assigneeId: string; due: string }[]
   burn: BurnPoint[]
   kpis: KPI[]
-}
-
-/** lightweight portfolio card (projects other than the fully-modelled hero) */
-export interface PortfolioCard {
-  id: string
-  name: string
-  department: string
-  status: ProjectStatus
-  budget?: number
-  contractType?: string
-  startLabel?: string
-  durationMonths?: number
-  tags?: string[]
-  progress?: number
-  teamInitials?: { initials: string; color: string }[]
 }

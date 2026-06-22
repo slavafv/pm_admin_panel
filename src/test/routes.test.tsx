@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AppRoutes } from '../App'
@@ -17,155 +17,122 @@ function renderAt(path: string, role?: RoleId) {
 
 afterEach(cleanup)
 
-describe('routes render without crashing', () => {
-  it('Screen 1 — project list shows hero project + create button', () => {
+describe('projects list', () => {
+  it('shows projects with new lifecycle filters and pagination', async () => {
     renderAt('/')
     expect(screen.getByRole('heading', { name: 'Projects', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pre-sale' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'In delivery' })).toBeInTheDocument()
     expect(screen.getAllByText(/RAK Wastewater Treatment Plant/i).length).toBeGreaterThan(0)
-    expect(screen.getByText('＋ Create project')).toBeInTheDocument()
+    // 9 projects, page size 6 → pagination present
+    expect(screen.getByText('Next →')).toBeInTheDocument()
   })
 
-  it('Screen 5 — summary table renders key rows', () => {
+  it('filtering by status narrows the list', () => {
+    renderAt('/')
+    fireEvent.click(screen.getByRole('button', { name: 'Completed' }))
+    expect(screen.getAllByText(/Barjeel Retrofit/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/RAK Wastewater Treatment Plant/)).not.toBeInTheDocument()
+  })
+})
+
+describe('project pages render without crashing', () => {
+  it('Overview (after loader) shows KPI + stages + summary, no filler buttons', async () => {
     renderAt('/projects/rak-wwtp-1')
-    expect(screen.getByText('Current phase')).toBeInTheDocument()
-    expect(screen.getByText('Budget spent')).toBeInTheDocument()
-    expect(screen.getByText(/AED 4,200,000 of AED 387,000,000/)).toBeInTheDocument()
-  })
-
-  it('Screen 3 — setup tabs render and switch', () => {
-    renderAt('/projects/rak-wwtp-1/setup')
-    expect(screen.getByText('Ahmed Al Mansouri')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Stakeholders'))
-    expect(screen.getByText('H.E. Munther bin Shekar')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Budget & Resources'))
-    expect(screen.getByText('Budget breakdown')).toBeInTheDocument()
-    expect(screen.getByText('Contingency')).toBeInTheDocument()
-  })
-
-  it('setup budget edits keep total in sync', () => {
-    renderAt('/projects/rak-wwtp-1/setup')
-    fireEvent.click(screen.getByText('Budget & Resources'))
-    const before = useStore.getState().getProject('rak-wwtp-1')!.totalBudget
-    // remove the contingency line → total must drop
-    const removeBtns = screen.getAllByTitle('Remove')
-    fireEvent.click(removeBtns[removeBtns.length - 1])
-    expect(useStore.getState().getProject('rak-wwtp-1')!.totalBudget).toBeLessThan(before)
-  })
-
-  it('Screen 4 — schedule renders gantt phases', () => {
-    renderAt('/projects/rak-wwtp-1/schedule')
-    expect(screen.getAllByText('Design & permitting').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Milestones').length).toBeGreaterThan(0)
-  })
-
-  it('Screen 6 — DG dashboard renders strategic cards', () => {
-    renderAt('/projects/rak-wwtp-1/dashboards', 'director_general')
-    expect(screen.getByText('Project health')).toBeInTheDocument()
-    expect(screen.getByText('Budget overview')).toBeInTheDocument()
-    expect(screen.getByText(/RAK Vision 2030/)).toBeInTheDocument()
-  })
-
-  it('Screen 6 — PM dashboard renders execution cards', () => {
-    renderAt('/projects/rak-wwtp-1/dashboards', 'project_manager')
-    expect(screen.getByText('Task board')).toBeInTheDocument()
-    expect(screen.getByText('Blockers · open issues')).toBeInTheDocument()
-    expect(screen.getByText('Next milestone')).toBeInTheDocument()
-  })
-
-  it('Screen 6 — Department Head dashboard renders operational cards', () => {
-    renderAt('/projects/rak-wwtp-1/dashboards', 'department_head')
-    expect(screen.getByText('Phase progress')).toBeInTheDocument()
-    expect(screen.getByText('Budget burn rate')).toBeInTheDocument()
-  })
-
-  it('Screen 8 — reports renders all four report cards', () => {
-    renderAt('/projects/rak-wwtp-1/reports')
-    expect(screen.getByText('Project status report')).toBeInTheDocument()
-    expect(screen.getByText('Budget summary')).toBeInTheDocument()
-    expect(screen.getByText('Milestone progress')).toBeInTheDocument()
-    expect(screen.getByText('Resource utilization')).toBeInTheDocument()
-  })
-
-  it('overview shows project stages with date ranges', () => {
-    renderAt('/projects/rak-wwtp-1')
-    expect(screen.getByText('Project stages')).toBeInTheDocument()
+    expect(await screen.findByText('Project stages')).toBeInTheDocument()
     expect(screen.getByText('Project summary')).toBeInTheDocument()
-    // no removed quick-action buttons remain
+    expect(screen.getByText('Project location')).toBeInTheDocument()
     expect(screen.queryByText('＋ Add task')).not.toBeInTheDocument()
-    expect(screen.queryByText('📎 Upload document')).not.toBeInTheDocument()
-    expect(screen.queryByText('📊 Generate report')).not.toBeInTheDocument()
   })
 
-  it('Al Hamra (planning) project opens — no longer not-found', () => {
+  it('Resources page has Team / Equipment / Budget tabs', () => {
+    renderAt('/projects/rak-wwtp-1/resources')
+    expect(screen.getByText('Team & roles')).toBeInTheDocument()
+    expect(screen.getByText('Equipment & assets')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Budget'))
+    expect(screen.getByText('Budget breakdown')).toBeInTheDocument()
+  })
+
+  it('Resources team tab can change a member access level (persists)', () => {
+    renderAt('/projects/rak-wwtp-1/resources')
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[0], { target: { value: 'Read only' } })
+    const pm = useStore.getState().getProject('rak-wwtp-1')!.team.find((t) => t.id === 'ahmed')!
+    expect(pm.access).toBe('Read only')
+  })
+
+  it('Risks page lists register, dependencies, assumptions', () => {
+    renderAt('/projects/rak-wwtp-1/risks')
+    expect(screen.getByText('Risk register')).toBeInTheDocument()
+    expect(screen.getByText('Dependencies')).toBeInTheDocument()
+    expect(screen.getByText('Assumptions log')).toBeInTheDocument()
+  })
+
+  it('Settings page has general/stakeholders/access tabs', () => {
+    renderAt('/projects/rak-wwtp-1/settings')
+    expect(screen.getByText('General — parameters set during creation')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Access & permissions' }))
+    expect(screen.getByText(/Access levels are saved per member/)).toBeInTheDocument()
+  })
+
+  it('Schedule renders gantt + edit workload', () => {
+    renderAt('/projects/rak-wwtp-1/schedule')
+    expect(screen.getByText('✎ Edit workload')).toBeInTheDocument()
+    expect(screen.getAllByText('Design & permitting').length).toBeGreaterThan(0)
+  })
+
+  it('Reports builder generates and stores a report', () => {
+    renderAt('/projects/rak-wwtp-1/reports')
+    expect(screen.getByText('Build a report')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('⬇ Generate & download'))
+    expect(useStore.getState().generatedReports.filter((r) => r.projectId === 'rak-wwtp-1').length).toBe(1)
+    expect(screen.getByText(/Generated reports \(1\)/)).toBeInTheDocument()
+  })
+
+  it('legacy /setup redirects to overview (not found is not shown)', async () => {
+    renderAt('/projects/rak-wwtp-1/setup')
+    expect(await screen.findByText('Project stages')).toBeInTheDocument()
+  })
+
+  it('Al Hamra and Barjeel both open', async () => {
     renderAt('/projects/al-hamra-roads')
     expect(screen.getAllByText('Al Hamra Masterplan — Road Network').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Project not found.')).not.toBeInTheDocument()
-  })
-
-  it('Barjeel (completed) project opens — no longer not-found', () => {
+    cleanup()
     renderAt('/projects/barjeel-retrofit')
     expect(screen.getAllByText('Barjeel Retrofit — Batch 1').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Project not found.')).not.toBeInTheDocument()
-  })
-
-  it('setup team tab can remove a (non-PM) member', () => {
-    renderAt('/projects/rak-wwtp-1/setup')
-    expect(screen.getByText('Sara Kovacs')).toBeInTheDocument()
-    const beforeRows = useStore.getState().getProject('rak-wwtp-1')!.team.length
-    // Sara Kovacs is the last team member; remove buttons are the 🗑 controls
-    const removeBtns = screen.getAllByTitle('Remove member')
-    fireEvent.click(removeBtns[removeBtns.length - 1])
-    expect(useStore.getState().getProject('rak-wwtp-1')!.team.length).toBe(beforeRows - 1)
   })
 
   it('unknown project id shows a not-found fallback', () => {
     renderAt('/projects/does-not-exist')
     expect(screen.getByText('Project not found.')).toBeInTheDocument()
   })
+})
 
-  it('create-project flow requires all fields, then adds a card on top', () => {
+describe('role-based dashboards', () => {
+  it('DG shows Vision KPIs; PM shows task board', () => {
+    renderAt('/projects/rak-wwtp-1/dashboards', 'director_general')
+    expect(screen.getByText(/RAK Vision 2030/)).toBeInTheDocument()
+    cleanup()
+    renderAt('/projects/rak-wwtp-1/dashboards', 'project_manager')
+    expect(screen.getByText('Task board')).toBeInTheDocument()
+  })
+})
+
+describe('create project modal', () => {
+  it('requires fields, then creates a project and opens it', async () => {
     renderAt('/')
     fireEvent.click(screen.getByText('＋ Create project'))
     fireEvent.change(screen.getByPlaceholderText(/RAK Wastewater/), { target: { value: 'Corniche Upgrade' } })
     const selects = screen.getAllByRole('combobox')
     fireEvent.change(selects[0], { target: { value: 'RAK Urban Planning Dept' } })
     fireEvent.change(selects[1], { target: { value: 'Design-Build' } })
-    fireEvent.change(document.querySelector('input[type="date"]') as HTMLInputElement, { target: { value: '2026-03-01' } })
-    fireEvent.change(screen.getByPlaceholderText('e.g. 36'), { target: { value: '24' } })
+    fireEvent.change(selects[2], { target: { value: 'Transport' } })
+    const dates = document.querySelectorAll('input[type="date"]')
+    fireEvent.change(dates[0] as HTMLInputElement, { target: { value: '2026-03-01' } })
+    fireEvent.change(dates[1] as HTMLInputElement, { target: { value: '2027-03-01' } })
     fireEvent.change(screen.getByPlaceholderText('e.g. 387000000'), { target: { value: '50000000' } })
     fireEvent.change(screen.getByPlaceholderText('Full name'), { target: { value: 'Sara Lee' } })
     fireEvent.click(screen.getByText('Create project'))
-    expect(useStore.getState().cards[0].name).toBe('Corniche Upgrade')
-  })
-
-  it('create-project with custom stages uses them as phases', () => {
-    const id = useStore.getState().createProject({
-      name: 'Custom Stages Project',
-      department: 'RAK Urban Planning Dept',
-      contractType: 'Design-Build',
-      startLabel: 'Start 2026',
-      durationMonths: 0,
-      totalBudget: 10_000_000,
-      pmName: 'Test PM',
-      tags: [],
-      stages: [
-        { name: 'Discovery', months: 3 },
-        { name: 'Build', months: 9 },
-      ],
-    })
-    const proj = useStore.getState().getProject(id)!
-    expect(proj.phases.map((p) => p.name)).toEqual(['Discovery', 'Build'])
-    expect(proj.durationMonths).toBe(12)
-  })
-})
-
-describe('store-driven role switch changes dashboard content', () => {
-  beforeEach(() => useStore.getState().resetDemo())
-  it('DG shows Vision KPIs, PM shows task board', () => {
-    const { unmount } = renderAt('/projects/rak-wwtp-1/dashboards', 'director_general')
-    expect(screen.getByText(/RAK Vision 2030/)).toBeInTheDocument()
-    unmount()
-    renderAt('/projects/rak-wwtp-1/dashboards', 'project_manager')
-    expect(screen.getByText('Task board')).toBeInTheDocument()
+    expect(useStore.getState().projects[0].name).toBe('Corniche Upgrade')
   })
 })

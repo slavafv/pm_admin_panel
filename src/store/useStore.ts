@@ -1,12 +1,17 @@
 import { create } from 'zustand'
-import type { PortfolioCard, Project, RoleId, TeamMember } from '../data/types'
-import { portfolio, allProjects, genericPhases } from '../data/projects'
+import type { Project, RoleId, TeamMember } from '../data/types'
+import { allProjects, genericPhases } from '../data/projects'
 
 export interface NewProjectInput {
   name: string
   department: string
   contractType: string
+  domain: string
+  location?: string
+  description?: string
   startLabel: string
+  startYear: number
+  startMonthIndex: number
   durationMonths: number
   totalBudget: number
   pmName: string
@@ -17,7 +22,6 @@ export interface NewProjectInput {
 
 interface StoreState {
   projects: Project[]
-  cards: PortfolioCard[]
   role: RoleId
   setRole: (r: RoleId) => void
   getProject: (id: string) => Project | undefined
@@ -27,12 +31,23 @@ interface StoreState {
   removeTeamMember: (projectId: string, memberId: string) => void
   /** Generic, type-safe project edit: pass a recipe returning the next project. */
   updateProject: (projectId: string, recipe: (p: Project) => Project) => void
+  generatedReports: GeneratedReport[]
+  addGeneratedReport: (r: GeneratedReport) => void
   resetDemo: () => void
 }
 
 export interface StageInput {
   name: string
   months: number
+}
+
+export interface GeneratedReport {
+  id: string
+  projectId: string
+  name: string
+  dateLabel: string
+  params: string[]
+  format: 'PDF' | 'CSV'
 }
 
 function initials(name: string): string {
@@ -46,7 +61,7 @@ let createdCount = 0
 /** Build a clean, openable Project from the create-modal input. Stages are
  *  generated from the entered duration (not inherited from the hero project),
  *  so a new project never shows wastewater-specific phases or data. */
-function buildProject(input: NewProjectInput): { project: Project; card: PortfolioCard } {
+function buildProject(input: NewProjectInput): Project {
   createdCount += 1
   const id = `proj-${createdCount}`
   const pmName = input.pmName || 'Project Manager'
@@ -96,19 +111,22 @@ function buildProject(input: NewProjectInput): { project: Project; card: Portfol
     name: input.name,
     department: input.department,
     contractType: input.contractType,
+    domain: input.domain,
+    location: input.location,
+    description: input.description,
     startMonthLabel: input.startLabel,
-    startYear: 2026,
-    startMonthIndex: 0,
+    startYear: input.startYear,
+    startMonthIndex: input.startMonthIndex,
     durationMonths: customStages.length ? totalDuration : input.durationMonths,
     totalBudget: input.totalBudget,
     spentBudget: 0,
     pmId: pm.id,
     tags: input.tags,
-    status: 'planning',
+    status: 'presale',
     overallProgress: 0,
     currentPhaseId: phases[0].id,
     health: 'green',
-    healthNote: 'Newly created — setup in progress',
+    healthNote: 'On track',
     team: [pm],
     internalStakeholders: [],
     externalPartners: [],
@@ -116,6 +134,7 @@ function buildProject(input: NewProjectInput): { project: Project; card: Portfol
     equipment: [],
     dependencies: [],
     risks: [],
+    assumptions: [],
     phases,
     milestones: [
       { id: 'k', name: 'Project kickoff', month: phases[0].startMonth, rag: 'green', state: 'scheduled' },
@@ -131,37 +150,21 @@ function buildProject(input: NewProjectInput): { project: Project; card: Portfol
     kpis: [{ label: 'Overall completion', current: 0, target: 100, unit: '%' }],
   }
 
-  const card: PortfolioCard = {
-    id,
-    name: input.name,
-    department: input.department,
-    status: 'planning',
-    budget: input.totalBudget,
-    contractType: input.contractType,
-    startLabel: input.startLabel,
-    durationMonths: input.durationMonths,
-    tags: input.tags,
-    progress: 0,
-    teamInitials: [{ initials: pm.initials, color: pm.color }],
-  }
-  return { project, card }
+  return project
 }
 
 export const useStore = create<StoreState>((set, get) => ({
   projects: allProjects,
-  cards: portfolio,
   role: 'director_general',
+  generatedReports: [],
 
   setRole: (r) => set({ role: r }),
 
   getProject: (id) => get().projects.find((p) => p.id === id),
 
   createProject: (input) => {
-    const { project, card } = buildProject(input)
-    set((s) => ({
-      projects: [...s.projects, project],
-      cards: [card, ...s.cards],
-    }))
+    const project = buildProject(input)
+    set((s) => ({ projects: [project, ...s.projects] }))
     return project.id
   },
 
@@ -200,8 +203,10 @@ export const useStore = create<StoreState>((set, get) => ({
       projects: s.projects.map((p) => (p.id === projectId ? recipe(p) : p)),
     })),
 
+  addGeneratedReport: (r) => set((s) => ({ generatedReports: [r, ...s.generatedReports] })),
+
   resetDemo: () => {
     createdCount = 0
-    set({ projects: allProjects, cards: portfolio, role: 'director_general' })
+    set({ projects: allProjects, role: 'director_general', generatedReports: [] })
   },
 }))

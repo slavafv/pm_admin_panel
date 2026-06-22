@@ -42,3 +42,10 @@ export function daysToMonth(monthIndex: number, startYear = 2026): number {
   const target = new Date(startYear + Math.floor(monthIndex / 12), ((monthIndex % 12) + 12) % 12, 1)
   return Math.round((target.getTime() - DEMO_TODAY.getTime()) / (1000 * 60 * 60 * 24))
 }
+
+/** Shorten a verbose contract type for compact display. */
+export function shortContract(contractType: string): string {
+  if (contractType.includes('PPP')) return 'PPP'
+  if (contractType.startsWith('EPC')) return 'EPC'
+  return contractType
+}

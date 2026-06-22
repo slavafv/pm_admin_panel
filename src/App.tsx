@@ -3,10 +3,12 @@ import { AppShell } from './components/AppShell'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectLayout } from './pages/ProjectLayout'
 import { SummaryPage } from './pages/SummaryPage'
-import { SetupPage } from './pages/SetupPage'
+import { ResourcesPage } from './pages/ResourcesPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { DashboardsPage } from './pages/DashboardsPage'
+import { RisksPage } from './pages/RisksPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 export function AppRoutes() {
   return (
@@ -15,10 +17,14 @@ export function AppRoutes() {
         <Route path="/" element={<ProjectsPage />} />
         <Route path="/projects/:id" element={<ProjectLayout />}>
           <Route index element={<SummaryPage />} />
-          <Route path="setup" element={<SetupPage />} />
+          <Route path="resources" element={<ResourcesPage />} />
+          {/* legacy path */}
+          <Route path="setup" element={<Navigate to=".." relative="path" replace />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="dashboards" element={<DashboardsPage />} />
+          <Route path="risks" element={<RisksPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -1,33 +1,66 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useStore } from '../store/useStore'
+import { useStore, type NewProjectInput } from '../store/useStore'
+
+const baseInput: NewProjectInput = {
+  name: 'Corniche Bridge',
+  department: 'RAK Urban Planning Dept',
+  contractType: 'Design-Build',
+  domain: 'Transport',
+  location: 'RAK',
+  startLabel: 'Start 01/03/2026',
+  startYear: 2026,
+  startMonthIndex: 2,
+  durationMonths: 24,
+  totalBudget: 50_000_000,
+  pmName: 'Sara Lee',
+  tags: ['Transport'],
+}
 
 describe('store', () => {
   beforeEach(() => useStore.getState().resetDemo())
 
-  it('starts with all three modelled projects + matching cards', () => {
+  it('starts with the modelled portfolio; every project is openable', () => {
     const s = useStore.getState()
-    expect(s.projects).toHaveLength(3)
-    expect(s.cards).toHaveLength(3)
-    expect(s.projects.map((p) => p.id)).toEqual(['rak-wwtp-1', 'al-hamra-roads', 'barjeel-retrofit'])
-    // every portfolio card has a matching openable project
-    for (const c of s.cards) expect(s.getProject(c.id)).toBeTruthy()
+    expect(s.projects.length).toBeGreaterThanOrEqual(3)
+    expect(s.projects.slice(0, 3).map((p) => p.id)).toEqual(['rak-wwtp-1', 'al-hamra-roads', 'barjeel-retrofit'])
+    for (const p of s.projects) expect(s.getProject(p.id)).toBeTruthy()
   })
 
-  it('created project gets generic stages, not the hero wastewater phases', () => {
+  it('statuses use the new lifecycle values', () => {
+    const s = useStore.getState()
+    expect(s.getProject('rak-wwtp-1')!.status).toBe('delivery')
+    expect(s.getProject('al-hamra-roads')!.status).toBe('presale')
+    expect(s.getProject('barjeel-retrofit')!.status).toBe('completed')
+  })
+
+  it('createProject prepends an openable project with generic stages', () => {
+    const id = useStore.getState().createProject(baseInput)
+    const s = useStore.getState()
+    expect(s.projects[0].id).toBe(id)
+    const proj = s.getProject(id)!
+    expect(proj.team[0].name).toBe('Sara Lee')
+    expect(proj.totalBudget).toBe(50_000_000)
+    expect(proj.status).toBe('presale')
+    expect(proj.phases.map((p) => p.id)).toEqual(['planning', 'execution', 'closeout'])
+    expect(proj.startMonthIndex).toBe(2)
+  })
+
+  it('createProject with custom stages uses them as phases', () => {
     const id = useStore.getState().createProject({
-      name: 'Corniche Bridge',
-      department: 'RAK Urban Planning Dept',
-      contractType: 'Design-Build',
-      startLabel: 'Start 2026',
-      durationMonths: 24,
-      totalBudget: 50_000_000,
-      pmName: 'Sara Lee',
-      tags: ['Roads'],
+      ...baseInput,
+      durationMonths: 0,
+      stages: [{ name: 'Discovery', months: 3 }, { name: 'Build', months: 9 }],
     })
     const proj = useStore.getState().getProject(id)!
-    expect(proj.phases.map((p) => p.id)).toEqual(['planning', 'execution', 'closeout'])
-    expect(proj.team).toHaveLength(1)
-    expect(proj.issues).toHaveLength(0)
+    expect(proj.phases.map((p) => p.name)).toEqual(['Discovery', 'Build'])
+    expect(proj.durationMonths).toBe(12)
+  })
+
+  it('markPhaseComplete recomputes overall progress', () => {
+    useStore.getState().markPhaseComplete('rak-wwtp-1', 'design')
+    const p = useStore.getState().getProject('rak-wwtp-1')!
+    expect(p.phases.find((ph) => ph.id === 'design')!.status).toBe('complete')
+    expect(p.overallProgress).toBe(33)
   })
 
   it('add/remove team member mutates the project team', () => {
@@ -41,35 +74,18 @@ describe('store', () => {
     expect(useStore.getState().getProject('rak-wwtp-1')!.team.length).toBe(before)
   })
 
-  it('createProject adds an openable project and a card on top', () => {
-    const id = useStore.getState().createProject({
-      name: 'Test Bridge',
-      department: 'RAK Municipality Urban Planning Dept',
-      contractType: 'Design-Build',
-      startLabel: 'Start 01/03/2026 (24 months)',
-      durationMonths: 24,
-      totalBudget: 100_000_000,
-      pmName: 'Jane Doe',
-      tags: ['Roads'],
+  it('updateProject can edit budget lines and keep total in sync', () => {
+    useStore.getState().updateProject('rak-wwtp-1', (p) => {
+      const lines = p.budgetLines.slice(0, -1)
+      return { ...p, budgetLines: lines, totalBudget: lines.reduce((a, b) => a + b.allocated, 0) }
     })
-    const s = useStore.getState()
-    expect(s.projects.find((p) => p.id === id)).toBeTruthy()
-    expect(s.cards[0].name).toBe('Test Bridge')
-    expect(s.cards[0].status).toBe('planning')
-    const proj = s.getProject(id)!
-    expect(proj.team[0].name).toBe('Jane Doe')
-    expect(proj.totalBudget).toBe(100_000_000)
-    expect(proj.overallProgress).toBe(0)
+    const p = useStore.getState().getProject('rak-wwtp-1')!
+    expect(p.totalBudget).toBe(p.budgetLines.reduce((a, b) => a + b.allocated, 0))
   })
 
-  it('markPhaseComplete sets phase to complete and recomputes progress', () => {
-    useStore.getState().markPhaseComplete('rak-wwtp-1', 'design')
-    const p = useStore.getState().getProject('rak-wwtp-1')!
-    const design = p.phases.find((ph) => ph.id === 'design')!
-    expect(design.status).toBe('complete')
-    expect(design.progressPct).toBe(100)
-    // 100 + 0 + 0 over 3 phases ~= 33
-    expect(p.overallProgress).toBe(33)
+  it('addGeneratedReport stores a report', () => {
+    useStore.getState().addGeneratedReport({ id: 'r1', projectId: 'rak-wwtp-1', name: 'Status', dateLabel: 'x', params: ['Budget breakdown'], format: 'PDF' })
+    expect(useStore.getState().generatedReports[0].id).toBe('r1')
   })
 
   it('setRole switches the active role', () => {

@@ -1,18 +1,19 @@
 import type { ProjectStatus } from '../../data/types'
+import { STATUS_META } from '../../lib/project'
 import { Chip } from './primitives'
 
-const MAP: Record<ProjectStatus, { label: string; icon: string; tone: 'gray' | 'green' | 'amber' }> = {
-  planning: { label: 'Planning', icon: '📋', tone: 'gray' },
-  active: { label: 'In progress', icon: '🚧', tone: 'green' },
-  onhold: { label: 'On hold', icon: '⏸️', tone: 'amber' },
-  completed: { label: 'Completed', icon: '✅', tone: 'gray' },
+const ICON: Record<ProjectStatus, string> = {
+  presale: '📝',
+  delivery: '🚧',
+  onhold: '⏸️',
+  completed: '✅',
 }
 
 export function StatusBadge({ status }: { status: ProjectStatus }) {
-  const m = MAP[status]
+  const m = STATUS_META[status]
   return (
-    <Chip tone={m.tone}>
-      <span>{m.icon}</span>
+    <Chip tone={m.tone === 'blue' ? 'gray' : m.tone}>
+      <span>{ICON[status]}</span>
       {m.label}
     </Chip>
   )
