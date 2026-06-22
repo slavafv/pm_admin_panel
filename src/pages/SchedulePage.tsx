@@ -1,12 +1,24 @@
 import { useState } from 'react'
 import { useProject } from './ProjectLayout'
+import { useStore } from '../store/useStore'
 import { Gantt } from '../components/gantt/Gantt'
 import { Card, Chip, RagDot, Button } from '../components/ui/primitives'
 import { calLabel, calDays } from '../lib/metrics'
 
 export function SchedulePage() {
   const p = useProject()
+  const update = useStore((s) => s.updateProject)
   const [view, setView] = useState<'gantt' | 'table'>('gantt')
+  const [editWorkload, setEditWorkload] = useState(false)
+
+  function setFte(memberId: string, phaseIdx: number, value: number) {
+    update(p.id, (prj) => ({
+      ...prj,
+      team: prj.team.map((t) =>
+        t.id === memberId ? { ...t, fteByPhase: t.fteByPhase.map((f, i) => (i === phaseIdx ? value : f)) } : t,
+      ),
+    }))
+  }
 
   return (
     <div className="grid gap-5">
@@ -24,8 +36,57 @@ export function SchedulePage() {
             </button>
           ))}
         </div>
-        <Button onClick={() => setView('gantt')}>✎ Edit workload</Button>
+        <Button
+          variant={editWorkload ? 'primary' : 'soft'}
+          onClick={() => {
+            setView('gantt')
+            setEditWorkload((e) => !e)
+          }}
+        >
+          {editWorkload ? '✓ Done editing' : '✎ Edit workload'}
+        </Button>
       </div>
+
+      {editWorkload && (
+        <Card className="overflow-x-auto p-5">
+          <h3 className="mb-1 text-sm font-semibold">Edit team workload — FTE per stage</h3>
+          <p className="mb-3 text-xs text-muted">Set each person's load (0–1.5 FTE) per stage. Over-allocation (&gt;1.0) shows red in the Gantt.</p>
+          <table className="w-full min-w-[520px]">
+            <thead>
+              <tr>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted">Member</th>
+                {p.phases.map((ph) => (
+                  <th key={ph.id} className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted">
+                    {ph.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {p.team.map((m) => (
+                <tr key={m.id} className="border-t border-line">
+                  <td className="px-3 py-2 text-sm font-medium">{m.name}</td>
+                  {p.phases.map((ph, i) => (
+                    <td key={ph.id} className="px-3 py-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="1.5"
+                        step="0.5"
+                        value={m.fteByPhase[i] ?? 0}
+                        onChange={(e) => setFte(m.id, i, Math.max(0, Number(e.target.value) || 0))}
+                        className={`w-20 rounded-lg border px-2.5 py-1.5 text-sm outline-none focus:border-navy ${
+                          (m.fteByPhase[i] ?? 0) > 1 ? 'border-red text-red' : 'border-line'
+                        }`}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
 
       {view === 'gantt' ? (
         <Gantt project={p} live />

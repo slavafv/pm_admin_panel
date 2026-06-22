@@ -11,6 +11,8 @@ export interface NewProjectInput {
   totalBudget: number
   pmName: string
   tags: string[]
+  /** Optional custom stages. If omitted/empty, generic stages are generated. */
+  stages?: { name: string; months: number }[]
 }
 
 interface StoreState {
@@ -23,7 +25,14 @@ interface StoreState {
   markPhaseComplete: (projectId: string, phaseId: string) => void
   addTeamMember: (projectId: string, member: TeamMember) => void
   removeTeamMember: (projectId: string, memberId: string) => void
+  /** Generic, type-safe project edit: pass a recipe returning the next project. */
+  updateProject: (projectId: string, recipe: (p: Project) => Project) => void
   resetDemo: () => void
+}
+
+export interface StageInput {
+  name: string
+  months: number
 }
 
 function initials(name: string): string {
@@ -53,12 +62,33 @@ function buildProject(input: NewProjectInput): { project: Project; card: Portfol
     capacity: 1,
   }
 
-  const phases = genericPhases(input.durationMonths)
-  const splits = [0.15, 0.7, 0.15]
+  // Build phases from custom stages if provided, else generic 3-stage split.
+  const customStages = (input.stages ?? []).filter((s) => s.name.trim())
+  let phases
+  if (customStages.length) {
+    let start = 0
+    phases = customStages.map((s, i) => {
+      const dur = Math.max(1, Math.round(s.months) || 1)
+      const ph = {
+        id: `stage-${i + 1}`,
+        name: s.name.trim(),
+        startMonth: start,
+        endMonth: start + dur - 1,
+        progressPct: 0,
+        status: 'not_started' as const,
+      }
+      start += dur
+      return ph
+    })
+  } else {
+    phases = genericPhases(input.durationMonths)
+  }
+  const totalDuration = phases[phases.length - 1].endMonth + 1
+  const splits = phases.map(() => 1 / phases.length)
   const budgetLines = phases.map((ph, i) => ({
     phase: ph.name,
     allocated: Math.round((input.totalBudget * splits[i]) / 1000) * 1000,
-    category: ['Design, consulting', 'Delivery, works', 'Testing, handover'][i],
+    category: 'Allocated',
   }))
 
   const project: Project = {
@@ -69,7 +99,7 @@ function buildProject(input: NewProjectInput): { project: Project; card: Portfol
     startMonthLabel: input.startLabel,
     startYear: 2026,
     startMonthIndex: 0,
-    durationMonths: input.durationMonths,
+    durationMonths: customStages.length ? totalDuration : input.durationMonths,
     totalBudget: input.totalBudget,
     spentBudget: 0,
     pmId: pm.id,
@@ -89,8 +119,10 @@ function buildProject(input: NewProjectInput): { project: Project; card: Portfol
     phases,
     milestones: [
       { id: 'k', name: 'Project kickoff', month: phases[0].startMonth, rag: 'green', state: 'scheduled' },
-      { id: 'e', name: 'Execution start', month: phases[1].startMonth, rag: 'green', state: 'scheduled' },
-      { id: 'c', name: 'Project completion', month: phases[2].endMonth, rag: 'green', state: 'scheduled' },
+      ...(phases.length > 1
+        ? [{ id: 'e', name: `${phases[1].name} start`, month: phases[1].startMonth, rag: 'green' as const, state: 'scheduled' as const }]
+        : []),
+      { id: 'c', name: 'Project completion', month: phases[phases.length - 1].endMonth, rag: 'green', state: 'scheduled' },
     ],
     issues: [],
     tasks: { todo: 0, inProgress: 0, done: 0 },
@@ -161,6 +193,11 @@ export const useStore = create<StoreState>((set, get) => ({
       projects: s.projects.map((p) =>
         p.id === projectId ? { ...p, team: p.team.filter((t) => t.id !== memberId) } : p,
       ),
+    })),
+
+  updateProject: (projectId, recipe) =>
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === projectId ? recipe(p) : p)),
     })),
 
   resetDemo: () => {

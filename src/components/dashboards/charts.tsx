@@ -23,9 +23,9 @@ export function BudgetDonut({ spent, total }: { spent: number; total: number }) 
     <div className="relative h-[150px]">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={data} dataKey="value" innerRadius={52} outerRadius={70} startAngle={90} endAngle={-270} stroke="none">
-            <Cell fill="#4caf82" />
-            <Cell fill="#eef0f4" />
+          <Pie data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={70} startAngle={90} endAngle={-270} stroke="none">
+            <Cell key="spent" fill="#4caf82" />
+            <Cell key="remaining" fill="#eef0f4" />
           </Pie>
         </PieChart>
       </ResponsiveContainer>
