@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useProject } from './ProjectLayout'
 import { Gantt } from '../components/gantt/Gantt'
 import { Card, Chip, RagDot, Button } from '../components/ui/primitives'
-import { monthLabel, daysToMonth } from '../lib/format'
+import { calLabel, calDays } from '../lib/metrics'
 
 export function SchedulePage() {
   const p = useProject()
@@ -45,8 +45,8 @@ export function SchedulePage() {
               {p.phases.map((ph) => (
                 <tr key={ph.id} className="border-b border-line last:border-0">
                   <td className="px-4 py-3 text-sm font-semibold">{ph.name}</td>
-                  <td className="px-4 py-3 text-sm">{monthLabel(ph.startMonth, p.startYear)}</td>
-                  <td className="px-4 py-3 text-sm">{monthLabel(ph.endMonth, p.startYear)}</td>
+                  <td className="px-4 py-3 text-sm">{calLabel(p, ph.startMonth)}</td>
+                  <td className="px-4 py-3 text-sm">{calLabel(p, ph.endMonth)}</td>
                   <td className="px-4 py-3 text-sm">{ph.progressPct}%</td>
                   <td className="px-4 py-3 text-sm capitalize">{ph.status.replace('_', ' ')}</td>
                 </tr>
@@ -60,14 +60,14 @@ export function SchedulePage() {
         <h3 className="mb-3 text-sm font-semibold">Milestones</h3>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {p.milestones.map((m) => {
-            const days = daysToMonth(m.month, p.startYear)
+            const days = calDays(p, m.month)
             return (
               <div key={m.id} className="flex items-center justify-between rounded-xl border border-line px-4 py-3">
                 <div className="flex items-center gap-3">
                   <span className="h-3 w-3 rotate-45 rounded-[2px]" style={{ background: { green: '#4caf82', amber: '#f0a830', red: '#e2574c' }[m.rag] }} />
                   <div>
                     <div className="text-sm font-semibold">{m.name}</div>
-                    <div className="text-xs text-muted">{monthLabel(m.month, p.startYear)}</div>
+                    <div className="text-xs text-muted">{calLabel(p, m.month)}</div>
                   </div>
                 </div>
                 <Chip tone={m.rag}>

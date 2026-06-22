@@ -4,8 +4,8 @@ import { useStore } from '../store/useStore'
 import { roleMeta } from '../config/roles'
 import { Card, CardHead, RagDot, ProgressBar, Avatar, Chip, Button } from '../components/ui/primitives'
 import { BudgetDonut, BurnChart } from '../components/dashboards/charts'
-import { aed, monthLabel, daysToMonth } from '../lib/format'
-import { nextMilestone, budgetVariance, issueCounts } from '../lib/metrics'
+import { aed } from '../lib/format'
+import { nextMilestone, budgetVariance, issueCounts, calLabel, calDays } from '../lib/metrics'
 import type { Project, RAG } from '../data/types'
 
 const RAG_HEX: Record<RAG, string> = { green: '#4caf82', amber: '#f0a830', red: '#e2574c' }
@@ -93,7 +93,7 @@ function DirectorGeneral({ p }: { p: Project }) {
                 <span className="text-sm font-medium">{m.name}</span>
               </div>
               <span className="text-xs text-muted">
-                {monthLabel(m.month, p.startYear)} · {m.state.replace('_', ' ')}
+                {calLabel(p, m.month)} · {m.state.replace('_', ' ')}
               </span>
             </div>
           ))}
@@ -186,6 +186,7 @@ function DepartmentHead({ p }: { p: Project }) {
 
       <Card>
         <CardHead title="Open issues" />
+        <p className="-mt-1 px-5 pb-2 text-xs text-muted">Unresolved problems blocking work, by category</p>
         <div className="grid gap-2.5 px-5 pb-5">
           {(['Permitting', 'Technical', 'Commercial'] as const).map((cat) => {
             const n = issues.byCat[cat]
@@ -223,7 +224,7 @@ function DepartmentHead({ p }: { p: Project }) {
         <CardHead title="Upcoming milestones · 60 days" />
         <div className="grid gap-2.5 px-5 pb-5">
           {p.milestones
-            .map((m) => ({ m, days: daysToMonth(m.month, p.startYear) }))
+            .map((m) => ({ m, days: calDays(p, m.month) }))
             .filter((x) => x.days > 0)
             .sort((a, b) => a.days - b.days)
             .slice(0, 3)
@@ -234,7 +235,7 @@ function DepartmentHead({ p }: { p: Project }) {
                   <Chip tone={m.rag}>{m.rag === 'amber' ? 'At risk' : 'On track'}</Chip>
                 </div>
                 <div className="mt-0.5 text-xs text-muted">
-                  {monthLabel(m.month, p.startYear)} · {days} days
+                  {calLabel(p, m.month)} · {days} days
                 </div>
               </div>
             ))}

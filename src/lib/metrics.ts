@@ -1,5 +1,16 @@
 import type { Project, Phase, Milestone } from '../data/types'
-import { daysToMonth } from './format'
+import { daysToMonth, monthLabel } from './format'
+
+/** Calendar label for a month that is stored *relative* to the project start.
+ *  Accounts for projects that don't start in January. */
+export function calLabel(p: Project, relMonth: number): string {
+  return monthLabel(p.startMonthIndex + relMonth, p.startYear)
+}
+
+/** Days from the demo "today" to a project-relative month. */
+export function calDays(p: Project, relMonth: number): number {
+  return daysToMonth(p.startMonthIndex + relMonth, p.startYear)
+}
 
 export function currentPhase(p: Project): Phase {
   return p.phases.find((ph) => ph.id === p.currentPhaseId) ?? p.phases[0]
@@ -8,7 +19,7 @@ export function currentPhase(p: Project): Phase {
 export function nextMilestone(p: Project): { milestone: Milestone; days: number } | null {
   const upcoming = p.milestones
     .filter((m) => m.state !== 'done')
-    .map((m) => ({ milestone: m, days: daysToMonth(m.month, p.startYear) }))
+    .map((m) => ({ milestone: m, days: calDays(p, m.month) }))
     .sort((a, b) => a.days - b.days)
   return upcoming[0] ?? null
 }

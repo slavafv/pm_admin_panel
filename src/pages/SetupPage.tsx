@@ -1,10 +1,30 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProject } from './ProjectLayout'
+import { useStore } from '../store/useStore'
 import { Card, Avatar, Chip, Button, RagDot } from '../components/ui/primitives'
 import { aed } from '../lib/format'
+import type { AccessLevel, TeamMember, TeamRole } from '../data/types'
 
 const TABS = ['Team & Roles', 'Stakeholders', 'Budget & Resources', 'Dependencies & Risks']
+
+const ROLE_OPTIONS: TeamRole[] = ['Project Manager', 'Department Head', 'Finance Officer', 'Senior Engineer', 'Document Controller', 'Observer', 'External Partner']
+const ACCESS_BY_ROLE: Record<string, AccessLevel> = {
+  'Project Manager': 'Full access',
+  'Department Head': 'Full access',
+  'Finance Officer': 'Budget view',
+  'Senior Engineer': 'Execution view',
+  'Document Controller': 'Read only',
+  Observer: 'Read only',
+  'External Partner': 'Read only',
+}
+const AVATAR_COLORS = ['#1a2235', '#4caf82', '#3b82f6', '#f0a830', '#e2574c']
+
+function memberInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted">{children}</th>
@@ -16,7 +36,31 @@ function Td({ children, className = '' }: { children?: React.ReactNode; classNam
 export function SetupPage() {
   const p = useProject()
   const navigate = useNavigate()
+  const addTeamMember = useStore((s) => s.addTeamMember)
+  const removeTeamMember = useStore((s) => s.removeTeamMember)
   const [tab, setTab] = useState(0)
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newRole, setNewRole] = useState<TeamRole>('Senior Engineer')
+
+  function confirmAdd() {
+    const name = newName.trim()
+    if (!name) return
+    const member: TeamMember = {
+      id: `m-${Date.now()}`,
+      name,
+      role: newRole,
+      access: ACCESS_BY_ROLE[newRole],
+      initials: memberInitials(name),
+      color: AVATAR_COLORS[p.team.length % AVATAR_COLORS.length],
+      fteByPhase: p.phases.map(() => 0.5),
+      capacity: 1,
+    }
+    addTeamMember(p.id, member)
+    setNewName('')
+    setNewRole('Senior Engineer')
+    setAdding(false)
+  }
 
   return (
     <div className="grid gap-5">
@@ -46,13 +90,17 @@ export function SetupPage() {
 
       {tab === 0 && (
         <Card className="overflow-hidden">
-          <table className="w-full">
-            <thead className="border-b border-line bg-[#fafbfc]">
+          <div className="flex items-center justify-between px-5 pt-4">
+            <h3 className="text-sm font-semibold">Core delivery team</h3>
+            <span className="text-xs text-muted">{p.team.length} member{p.team.length === 1 ? '' : 's'}</span>
+          </div>
+          <table className="mt-2 w-full">
+            <thead className="border-y border-line bg-[#fafbfc]">
               <tr>
                 <Th>Member</Th>
                 <Th>Role</Th>
                 <Th>Access level</Th>
-                <Th>Actions</Th>
+                <Th>Remove</Th>
               </tr>
             </thead>
             <tbody>
@@ -68,11 +116,54 @@ export function SetupPage() {
                   <Td>
                     <Chip>{m.access}</Chip>
                   </Td>
-                  <Td className="text-muted">Edit · Remove</Td>
+                  <Td>
+                    <button
+                      onClick={() => removeTeamMember(p.id, m.id)}
+                      disabled={m.id === p.pmId}
+                      title={m.id === p.pmId ? 'The project manager cannot be removed' : 'Remove member'}
+                      className="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-red-soft hover:text-red disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted"
+                    >
+                      🗑
+                    </button>
+                  </Td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <div className="border-t border-line p-4">
+            {adding ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  autoFocus
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && confirmAdd()}
+                  placeholder="Full name"
+                  className="rounded-xl border border-line px-3 py-2 text-sm outline-none focus:border-navy"
+                />
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as TeamRole)}
+                  className="rounded-xl border border-line px-3 py-2 text-sm outline-none focus:border-navy"
+                >
+                  {ROLE_OPTIONS.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </select>
+                <Button onClick={confirmAdd} disabled={!newName.trim()}>
+                  Add
+                </Button>
+                <Button variant="ghost" onClick={() => setAdding(false)}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <button onClick={() => setAdding(true)} className="text-sm font-semibold text-navy hover:underline">
+                ＋ Add team member
+              </button>
+            )}
+          </div>
         </Card>
       )}
 

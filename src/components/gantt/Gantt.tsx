@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import type { Project } from '../../data/types'
-import { monthShort, monthLabel, DEMO_NOW_MONTH } from '../../lib/format'
+import { monthShort, monthLabel } from '../../lib/format'
 import { useStore } from '../../store/useStore'
 
 const COL = 34 // px per month
 const LABEL_W = 196
-const DEMO_NOW = DEMO_NOW_MONTH
+// demo "today" = Feb 2026 → absolute month index from year 0
+const DEMO_NOW_ABS = 2026 * 12 + 1
 
 const RAG_HEX = { green: '#4caf82', amber: '#f0a830', red: '#e2574c' }
 
@@ -15,10 +16,19 @@ export function Gantt({ project, live = false }: { project: Project; live?: bool
   const [tip, setTip] = useState<string | null>(null)
 
   const months = project.durationMonths
+  const startAbs = project.startYear * 12 + project.startMonthIndex
   const timelineW = months * COL
+  // "today" position relative to this project's start (hidden if out of range)
+  const nowRel = DEMO_NOW_ABS - startAbs
+  const showNow = nowRel >= 0 && nowRel < months
+
+  // calendar label for a column m (relative to project start)
+  const colLabel = (m: number) => monthLabel(project.startMonthIndex + m, project.startYear)
+  const colShort = (m: number) => monthShort(project.startMonthIndex + m)
+
   const years: { year: number; span: number; offset: number }[] = []
   for (let m = 0; m < months; m++) {
-    const year = project.startYear + Math.floor(m / 12)
+    const year = Math.floor((startAbs + m) / 12)
     const last = years[years.length - 1]
     if (last && last.year === year) last.span += 1
     else years.push({ year, span: 1, offset: m })
@@ -69,7 +79,7 @@ export function Gantt({ project, live = false }: { project: Project; live?: bool
                   className="border-l border-line/60 py-1.5 text-center text-[10px] text-muted"
                   style={{ width: COL }}
                 >
-                  {monthShort(m)}
+                  {colShort(m)}
                 </div>
               ))}
             </div>
@@ -83,7 +93,7 @@ export function Gantt({ project, live = false }: { project: Project; live?: bool
                 key={ms.id}
                 className="group absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
                 style={{ left: ms.month * COL + COL / 2 }}
-                onMouseEnter={() => setTip(`${ms.name} — ${monthLabel(ms.month, project.startYear)}`)}
+                onMouseEnter={() => setTip(`${ms.name} — ${colLabel(ms.month)}`)}
                 onMouseLeave={() => setTip(null)}
               >
                 <div
@@ -112,11 +122,7 @@ export function Gantt({ project, live = false }: { project: Project; live?: bool
                     outline: criticalPath ? '2px dashed #e2574c' : 'none',
                     outlineOffset: 2,
                   }}
-                  onMouseEnter={() =>
-                    setTip(
-                      `${ph.name}: ${monthLabel(ph.startMonth, project.startYear)} → ${monthLabel(ph.endMonth, project.startYear)}`,
-                    )
-                  }
+                  onMouseEnter={() => setTip(`${ph.name}: ${colLabel(ph.startMonth)} → ${colLabel(ph.endMonth)}`)}
                   onMouseLeave={() => setTip(null)}
                 >
                   {/* progress fill */}
@@ -216,10 +222,11 @@ export function Gantt({ project, live = false }: { project: Project; live?: bool
   }
 
   function TodayLine() {
+    if (!showNow) return null
     return (
       <div
         className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-blue"
-        style={{ left: DEMO_NOW * COL + COL / 2 }}
+        style={{ left: nowRel * COL + COL / 2 }}
       />
     )
   }

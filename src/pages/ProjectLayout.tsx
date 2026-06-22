@@ -1,15 +1,8 @@
-import { NavLink, Outlet, useParams, useOutletContext, Link } from 'react-router-dom'
+import { Outlet, useParams, useOutletContext, Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import type { Project } from '../data/types'
 import { RagDot } from '../components/ui/primitives'
-
-const TABS = [
-  { to: '', label: 'Overview', end: true },
-  { to: 'setup', label: 'Setup', end: false },
-  { to: 'schedule', label: 'Schedule', end: false },
-  { to: 'dashboards', label: 'Dashboards', end: false },
-  { to: 'reports', label: 'Reports', end: false },
-]
+import { StatusBadge } from '../components/ui/StatusBadge'
 
 export function ProjectLayout() {
   const { id } = useParams()
@@ -36,28 +29,12 @@ export function ProjectLayout() {
         <span className="font-medium text-ink">{project.name}</span>
       </nav>
 
-      <div className="mt-2 flex items-center gap-3">
+      <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-ink">{project.name}</h1>
+        <StatusBadge status={project.status} />
         <span className="inline-flex items-center gap-1.5 rounded-full bg-card border border-line px-2.5 py-1 text-xs font-medium">
           <RagDot rag={project.health} /> {project.healthNote}
         </span>
-      </div>
-
-      <div className="mt-4 flex gap-1 border-b border-line">
-        {TABS.map((t) => (
-          <NavLink
-            key={t.label}
-            to={t.to}
-            end={t.end}
-            className={({ isActive }) =>
-              `relative px-4 py-2.5 text-sm font-medium transition ${
-                isActive ? 'text-navy' : 'text-muted hover:text-ink'
-              } ${isActive ? "after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:rounded-full after:bg-navy after:content-['']" : ''}`
-            }
-          >
-            {t.label}
-          </NavLink>
-        ))}
       </div>
 
       <div className="mt-6">

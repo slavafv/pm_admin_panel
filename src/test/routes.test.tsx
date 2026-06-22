@@ -75,18 +75,36 @@ describe('routes render without crashing', () => {
     expect(screen.getByText('Resource utilization')).toBeInTheDocument()
   })
 
-  it('summary quick-action "Add task" navigates to the schedule (not a dead route)', () => {
+  it('overview shows project stages with date ranges', () => {
     renderAt('/projects/rak-wwtp-1')
-    fireEvent.click(screen.getByText('＋ Add task'))
-    // Schedule screen renders the "Edit workload" action + Gantt timeline
-    expect(screen.getByText('✎ Edit workload')).toBeInTheDocument()
+    expect(screen.getByText('Project stages')).toBeInTheDocument()
+    expect(screen.getByText('Project summary')).toBeInTheDocument()
+    // no removed quick-action buttons remain
+    expect(screen.queryByText('＋ Add task')).not.toBeInTheDocument()
+    expect(screen.queryByText('📎 Upload document')).not.toBeInTheDocument()
+    expect(screen.queryByText('📊 Generate report')).not.toBeInTheDocument()
+  })
+
+  it('Al Hamra (planning) project opens — no longer not-found', () => {
+    renderAt('/projects/al-hamra-roads')
+    expect(screen.getAllByText('Al Hamra Masterplan — Road Network').length).toBeGreaterThan(0)
     expect(screen.queryByText('Project not found.')).not.toBeInTheDocument()
   })
 
-  it('summary quick-action "Generate report" navigates to reports', () => {
-    renderAt('/projects/rak-wwtp-1')
-    fireEvent.click(screen.getByText('📊 Generate report'))
-    expect(screen.getByText('Project status report')).toBeInTheDocument()
+  it('Barjeel (completed) project opens — no longer not-found', () => {
+    renderAt('/projects/barjeel-retrofit')
+    expect(screen.getAllByText('Barjeel Retrofit — Batch 1').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Project not found.')).not.toBeInTheDocument()
+  })
+
+  it('setup team tab can remove a (non-PM) member', () => {
+    renderAt('/projects/rak-wwtp-1/setup')
+    expect(screen.getByText('Sara Kovacs')).toBeInTheDocument()
+    const beforeRows = useStore.getState().getProject('rak-wwtp-1')!.team.length
+    // Sara Kovacs is the last team member; remove buttons are the 🗑 controls
+    const removeBtns = screen.getAllByTitle('Remove member')
+    fireEvent.click(removeBtns[removeBtns.length - 1])
+    expect(useStore.getState().getProject('rak-wwtp-1')!.team.length).toBe(beforeRows - 1)
   })
 
   it('unknown project id shows a not-found fallback', () => {

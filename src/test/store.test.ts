@@ -4,11 +4,41 @@ import { useStore } from '../store/useStore'
 describe('store', () => {
   beforeEach(() => useStore.getState().resetDemo())
 
-  it('starts with the hero project + 3 portfolio cards', () => {
+  it('starts with all three modelled projects + matching cards', () => {
     const s = useStore.getState()
-    expect(s.projects).toHaveLength(1)
+    expect(s.projects).toHaveLength(3)
     expect(s.cards).toHaveLength(3)
-    expect(s.projects[0].id).toBe('rak-wwtp-1')
+    expect(s.projects.map((p) => p.id)).toEqual(['rak-wwtp-1', 'al-hamra-roads', 'barjeel-retrofit'])
+    // every portfolio card has a matching openable project
+    for (const c of s.cards) expect(s.getProject(c.id)).toBeTruthy()
+  })
+
+  it('created project gets generic stages, not the hero wastewater phases', () => {
+    const id = useStore.getState().createProject({
+      name: 'Corniche Bridge',
+      department: 'RAK Urban Planning Dept',
+      contractType: 'Design-Build',
+      startLabel: 'Start 2026',
+      durationMonths: 24,
+      totalBudget: 50_000_000,
+      pmName: 'Sara Lee',
+      tags: ['Roads'],
+    })
+    const proj = useStore.getState().getProject(id)!
+    expect(proj.phases.map((p) => p.id)).toEqual(['planning', 'execution', 'closeout'])
+    expect(proj.team).toHaveLength(1)
+    expect(proj.issues).toHaveLength(0)
+  })
+
+  it('add/remove team member mutates the project team', () => {
+    const before = useStore.getState().getProject('rak-wwtp-1')!.team.length
+    useStore.getState().addTeamMember('rak-wwtp-1', {
+      id: 'tmp', name: 'New Person', role: 'Observer', access: 'Read only',
+      initials: 'NP', color: '#000', fteByPhase: [0, 0, 0], capacity: 1,
+    })
+    expect(useStore.getState().getProject('rak-wwtp-1')!.team.length).toBe(before + 1)
+    useStore.getState().removeTeamMember('rak-wwtp-1', 'tmp')
+    expect(useStore.getState().getProject('rak-wwtp-1')!.team.length).toBe(before)
   })
 
   it('createProject adds an openable project and a card on top', () => {
