@@ -32,6 +32,18 @@ export function deriveAlerts(p: Project): Alert[] {
     }
   }
 
+  // Equipment with overdue maintenance
+  for (const e of p.equipment) {
+    if (e.maintenance === 'Overdue') {
+      out.push({
+        level: 'risk',
+        area: 'Equipment',
+        text: `${e.name} maintenance is overdue.`,
+        recommendation: 'Take it offline and service before further use.',
+      })
+    }
+  }
+
   // People on leave / limited availability
   for (const m of p.team) {
     if (m.availability === 'On leave') {

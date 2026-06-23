@@ -125,13 +125,12 @@ export const rakProject: Project = {
 
   equipment: [
     // serviceUntilMonth = month (from project start) when lease/cert ends
-    { name: 'Tower crane (leased)', category: 'Heavy plant', phase: 'Construction', status: 'In use', serviceUntilMonth: 28 },
-    { name: 'Treatment unit #1', category: 'Treatment', phase: 'Construction', status: 'Ordered', serviceUntilMonth: 40 },
-    { name: 'Treatment unit #2', category: 'Treatment', phase: 'Construction', status: 'Ordered' },
-    { name: 'Treatment unit #3', category: 'Treatment', phase: 'Construction', status: 'Planned' },
-    { name: 'Piping system', category: 'Civil', phase: 'Construction', status: 'Planned' },
-    { name: 'Site vehicles (×4)', category: 'Logistics', phase: 'Construction', status: 'Delivered', serviceUntilMonth: 18 },
-    { name: 'Lab equipment', category: 'Commissioning', phase: 'Commissioning', status: 'Planned' },
+    { name: 'CRN-01 Tower crane', category: 'Heavy plant', phase: 'Construction', status: 'In use', utilization: 88, operatorId: 'james', costPerHour: 120, maintenance: 'Due soon', serviceUntilMonth: 28 },
+    { name: 'EXC-104 Excavator', category: 'Excavators', phase: 'Construction', status: 'In use', utilization: 91, operatorId: 'james', costPerHour: 64, maintenance: 'Up to date' },
+    { name: 'TRT-01 Treatment unit #1', category: 'Treatment', phase: 'Construction', status: 'Available', utilization: 0, costPerHour: 0, maintenance: 'Up to date', serviceUntilMonth: 40 },
+    { name: 'TRT-02 Treatment unit #2', category: 'Treatment', phase: 'Construction', status: 'Planned', utilization: 0, maintenance: 'Pending' },
+    { name: 'VEH-09 Site vehicles (×4)', category: 'Logistics', phase: 'Construction', status: 'Maintenance', utilization: 54, costPerHour: 30, maintenance: 'Overdue', serviceUntilMonth: 18 },
+    { name: 'LAB-15 Lab equipment', category: 'Commissioning', phase: 'Commissioning', status: 'Planned', utilization: 0, maintenance: 'Pending' },
   ],
 
   dependencies: [

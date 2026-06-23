@@ -55,13 +55,22 @@ export interface BudgetLine {
   category: string
 }
 
+export type EquipStatus = 'In use' | 'Available' | 'Maintenance' | 'Planned'
+export type MaintStatus = 'Up to date' | 'Due soon' | 'Overdue' | 'Pending'
+
 export interface Equipment {
   name: string
   category: string
   phase: string
-  status: 'Ordered' | 'Delivered' | 'In use' | 'Planned'
+  status: EquipStatus
   /** Month index (relative to project start) when lease/service/certification ends. */
   serviceUntilMonth?: number
+  /** 0–100 utilisation. */
+  utilization?: number
+  /** Assigned operator (team member id). Undefined → unassigned ("Missing"). */
+  operatorId?: string
+  costPerHour?: number
+  maintenance?: MaintStatus
 }
 
 export interface Dependency {
