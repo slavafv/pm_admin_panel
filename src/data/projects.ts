@@ -1,4 +1,4 @@
-import type { Project, Phase, RAG, TeamMember } from './types'
+import type { Project, Phase, RAG, TeamMember, Equipment } from './types'
 
 /** Build sensible, domain-neutral stages spanning a project's duration.
  *  Used for projects created at runtime so they don't inherit the hero
@@ -447,6 +447,7 @@ interface MakeArgs {
   health: RAG
   healthNote: string
   pm: { name: string; initials: string; color: string }
+  equipment?: Equipment[]
 }
 
 function makeProject(a: MakeArgs): Project {
@@ -493,7 +494,7 @@ function makeProject(a: MakeArgs): Project {
     internalStakeholders: [],
     externalPartners: [],
     budgetLines: builtPhases.map((ph, i) => ({ phase: ph.name, allocated: Math.round((a.totalBudget * splits[i]) / 1000) * 1000, category: 'Allocated' })),
-    equipment: [],
+    equipment: a.equipment ?? [],
     dependencies: [],
     risks: [],
     assumptions: [],
@@ -512,9 +513,18 @@ function makeProject(a: MakeArgs): Project {
 
 const extraProjects: Project[] = [
   makeProject({ id: 'corniche-boardwalk', name: 'RAK Corniche Boardwalk', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Urban Development', location: 'RAK Corniche', description: 'New 4 km waterfront boardwalk with landscaping and public amenities.', startYear: 2026, startMonthIndex: 8, startMonthLabel: 'Sep 2026 (planned)', durationMonths: 18, totalBudget: 58_000_000, status: 'presale', overallProgress: 0, health: 'green', healthNote: 'On track', pm: { name: 'Yousef Karim', initials: 'YK', color: '#3b82f6' } }),
-  makeProject({ id: 'julphar-cooling', name: 'Julphar District Cooling', department: 'RAK Public Services Department', contractType: 'EPC — Engineering, Procurement, Construction', domain: 'Energy', location: 'Julphar District, RAK', description: 'District cooling plant and distribution network for the Julphar towers area.', startYear: 2025, startMonthIndex: 9, startMonthLabel: 'Oct 2025', durationMonths: 28, totalBudget: 210_000_000, spentBudget: 64_000_000, status: 'delivery', overallProgress: 31, health: 'amber', healthNote: 'Needs attention', pm: { name: 'Aisha Obaid', initials: 'AO', color: '#4caf82' } }),
+  makeProject({ id: 'julphar-cooling', name: 'Julphar District Cooling', department: 'RAK Public Services Department', contractType: 'EPC — Engineering, Procurement, Construction', domain: 'Energy', location: 'Julphar District, RAK', description: 'District cooling plant and distribution network for the Julphar towers area.', startYear: 2025, startMonthIndex: 9, startMonthLabel: 'Oct 2025', durationMonths: 28, totalBudget: 210_000_000, spentBudget: 64_000_000, status: 'delivery', overallProgress: 31, health: 'amber', healthNote: 'Needs attention', pm: { name: 'Aisha Obaid', initials: 'AO', color: '#4caf82' },
+    equipment: [
+      { name: 'CHL-02 Chiller unit', category: 'Mechanical', phase: 'Execution', status: 'In use', utilization: 76, operatorId: 'julphar-cooling-pm', costPerHour: 95, maintenance: 'Up to date' },
+      { name: 'CRN-07 Mobile crane', category: 'Heavy plant', phase: 'Execution', status: 'In use', utilization: 62, costPerHour: 110, maintenance: 'Due soon' },
+      { name: 'GEN-03 Generator', category: 'Power', phase: 'Execution', status: 'Available', utilization: 40, costPerHour: 35, maintenance: 'Up to date' },
+    ] }),
   makeProject({ id: 'schools-solar', name: 'RAK Schools Solar Rollout', department: 'RAK Energy Efficiency Office', contractType: 'Framework', domain: 'Energy', location: '40 schools, RAK', description: 'Rooftop solar PV across 40 public schools with net-metering.', startYear: 2026, startMonthIndex: 1, startMonthLabel: 'Feb 2026', durationMonths: 20, totalBudget: 47_500_000, spentBudget: 6_300_000, status: 'onhold', overallProgress: 12, health: 'red', healthNote: 'At risk', pm: { name: 'Tariq Nasser', initials: 'TN', color: '#e2574c' } }),
-  makeProject({ id: 'marjan-drainage', name: 'Marjan Island Drainage', department: 'RAK Public Services Department', contractType: 'PPP — Public-Private Partnership', domain: 'Water', location: 'Al Marjan Island, RAK', description: 'Stormwater drainage and pumping network for Al Marjan Island.', startYear: 2025, startMonthIndex: 3, startMonthLabel: 'Apr 2025', durationMonths: 30, totalBudget: 162_000_000, spentBudget: 88_000_000, status: 'delivery', overallProgress: 54, health: 'green', healthNote: 'On track', pm: { name: 'Khalid Saif', initials: 'KS', color: '#1a2235' } }),
+  makeProject({ id: 'marjan-drainage', name: 'Marjan Island Drainage', department: 'RAK Public Services Department', contractType: 'PPP — Public-Private Partnership', domain: 'Water', location: 'Al Marjan Island, RAK', description: 'Stormwater drainage and pumping network for Al Marjan Island.', startYear: 2025, startMonthIndex: 3, startMonthLabel: 'Apr 2025', durationMonths: 30, totalBudget: 162_000_000, spentBudget: 88_000_000, status: 'delivery', overallProgress: 54, health: 'green', healthNote: 'On track', pm: { name: 'Khalid Saif', initials: 'KS', color: '#1a2235' },
+    equipment: [
+      { name: 'EXC-210 Excavator', category: 'Excavators', phase: 'Execution', status: 'In use', utilization: 84, operatorId: 'marjan-drainage-pm', costPerHour: 66, maintenance: 'Up to date' },
+      { name: 'PMP-04 Dewatering pump', category: 'Pumps', phase: 'Execution', status: 'Maintenance', utilization: 0, costPerHour: 22, maintenance: 'Overdue' },
+    ] }),
   makeProject({ id: 'heritage-souq', name: 'Heritage Souq Restoration', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Buildings', location: 'Old Town, RAK', description: 'Restoration of the historic souq with conservation-grade works.', startYear: 2025, startMonthIndex: 0, startMonthLabel: 'Jan 2025', durationMonths: 11, totalBudget: 33_400_000, status: 'completed', overallProgress: 100, health: 'green', healthNote: 'Completed', pm: { name: 'Maryam Ali', initials: 'MA', color: '#f0a830' } }),
   makeProject({ id: 'smart-traffic', name: 'RAK Smart Traffic — Phase 1', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Transport', location: 'City-wide, RAK', description: 'Adaptive traffic signals and sensors across 25 key intersections.', startYear: 2026, startMonthIndex: 10, startMonthLabel: 'Nov 2026 (planned)', durationMonths: 16, totalBudget: 29_000_000, status: 'presale', overallProgress: 0, health: 'green', healthNote: 'On track', pm: { name: 'Hessa Rashed', initials: 'HR', color: '#3b82f6' } }),
 ]

@@ -168,6 +168,10 @@ export function Button({
   )
 }
 
+export function Pill({ tone, children }: { tone: string; children: ReactNode }) {
+  return <span className={clsx('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold', tone)}>{children}</span>
+}
+
 export function StatRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between py-2 text-sm">

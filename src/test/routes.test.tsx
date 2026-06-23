@@ -108,6 +108,31 @@ describe('project pages render without crashing', () => {
   })
 })
 
+describe('workspace pages (derived from project data)', () => {
+  it('Employees page aggregates people across all projects', () => {
+    renderAt('/employees')
+    expect(screen.getByRole('heading', { name: 'Employees', level: 1 })).toBeInTheDocument()
+    // hero PM + a PM from another project both appear (cross-project aggregation)
+    expect(screen.getByText('Ahmed Al Mansouri')).toBeInTheDocument()
+    expect(screen.getByText('Omar Al Khalifa')).toBeInTheDocument()
+  })
+
+  it('Employee count matches the unique names across the store (no divergence)', () => {
+    const projects = useStore.getState().projects
+    const unique = new Set(projects.flatMap((p) => p.team.map((t) => t.name)))
+    renderAt('/employees')
+    expect(screen.getByText(`${unique.size} people · ${unique.size - 1} active right now`)).toBeInTheDocument()
+  })
+
+  it('Equipment fleet aggregates units and shows the owning project', () => {
+    renderAt('/equipment')
+    expect(screen.getByRole('heading', { name: 'Equipment fleet', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('CRN-01 Tower crane')).toBeInTheDocument()
+    // project column links to the owning project
+    expect(screen.getAllByText('RAK Wastewater Treatment Plant — Phase 1').length).toBeGreaterThan(0)
+  })
+})
+
 describe('role-based dashboards', () => {
   it('DG shows Vision KPIs; PM shows task board', () => {
     renderAt('/projects/rak-wwtp-1/dashboards', 'director_general')

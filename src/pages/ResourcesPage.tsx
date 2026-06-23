@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useProject } from './ProjectLayout'
 import { useStore } from '../store/useStore'
-import { Card, Avatar, Button } from '../components/ui/primitives'
+import { Card, Avatar, Button, Pill } from '../components/ui/primitives'
 import { InlineAddForm } from '../components/ui/InlineAddForm'
 import { aed } from '../lib/format'
 import { calLabel } from '../lib/metrics'
+import { STATUS_TONE, MAINT_TONE, utilColor, utilText } from '../lib/equipmentStyle'
 import type { AccessLevel, Availability, Equipment, TeamMember, TeamRole } from '../data/types'
 
 const AVAILABILITY: Availability[] = ['Available', 'On leave', 'Limited']
@@ -17,28 +18,6 @@ const ACCESS_BY_ROLE: Record<string, AccessLevel> = {
   'Senior Engineer': 'Execution view', 'Document Controller': 'Read only', Observer: 'Read only', 'External Partner': 'Read only',
 }
 const EQUIP_STATUS = ['Available', 'In use', 'Maintenance', 'Planned']
-
-const STATUS_TONE: Record<string, string> = {
-  'In use': 'bg-blue-soft text-blue',
-  Available: 'bg-green-soft text-green',
-  Maintenance: 'bg-red-soft text-red',
-  Planned: 'bg-[#eef0f4] text-[#475467]',
-}
-const MAINT_TONE: Record<string, string> = {
-  'Up to date': 'bg-green-soft text-green',
-  'Due soon': 'bg-amber-soft text-amber',
-  Pending: 'bg-amber-soft text-amber',
-  Overdue: 'bg-red-soft text-red',
-}
-function utilColor(u: number): string {
-  return u >= 90 ? 'bg-green' : u >= 55 ? 'bg-amber' : 'bg-red'
-}
-function utilText(u: number): string {
-  return u >= 90 ? 'text-green' : u >= 55 ? 'text-amber' : 'text-red'
-}
-function Pill({ tone, children }: { tone: string; children: React.ReactNode }) {
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{children}</span>
-}
 const AVATAR_COLORS = ['#1a2235', '#4caf82', '#3b82f6', '#f0a830', '#e2574c']
 
 function initialsOf(name: string): string {

@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { ProjectsPage } from './pages/ProjectsPage'
+import { EmployeesPage } from './pages/EmployeesPage'
+import { EquipmentPage } from './pages/EquipmentPage'
 import { ProjectLayout } from './pages/ProjectLayout'
 import { SummaryPage } from './pages/SummaryPage'
 import { ResourcesPage } from './pages/ResourcesPage'
@@ -15,6 +17,8 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/" element={<ProjectsPage />} />
+        <Route path="/employees" element={<EmployeesPage />} />
+        <Route path="/equipment" element={<EquipmentPage />} />
         <Route path="/projects/:id" element={<ProjectLayout />}>
           <Route index element={<SummaryPage />} />
           <Route path="resources" element={<ResourcesPage />} />

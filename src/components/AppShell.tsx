@@ -21,6 +21,8 @@ const ICONS = {
   projects: 'M3 7h18M3 12h18M3 17h18',
   overview: 'M4 4h7v7H4zM13 4h7v4h-7zM13 11h7v9h-7zM4 14h7v6H4z',
   schedule: 'M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z',
+  employees: 'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8',
+  equipment: 'M10 17h4V5H2v12h3M20 17h2v-3.3a1 1 0 00-.3-.7l-2.6-2.6a1 1 0 00-.7-.3H14v7h2M7.5 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM17.5 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
   resources: 'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8',
   dashboards: 'M3 13a9 9 0 0118 0M12 13l4-3',
   risks: 'M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 004 21h16a2 2 0 001.7-3.1l-8-14a2 2 0 00-3.4 0z',
@@ -76,7 +78,10 @@ export function AppShell() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-3">
+          <GroupLabel>Workspace</GroupLabel>
           <NavItem to="/" end label="All projects" icon={<Icon d={ICONS.projects} />} />
+          <NavItem to="/employees" label="Employees" icon={<Icon d={ICONS.employees} />} />
+          <NavItem to="/equipment" label="Equipment" icon={<Icon d={ICONS.equipment} />} />
 
           {/* Contextual project sections — only inside an open project */}
           {project && (
