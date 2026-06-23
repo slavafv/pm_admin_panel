@@ -10,6 +10,7 @@ export function SchedulePage() {
   const update = useStore((s) => s.updateProject)
   const [view, setView] = useState<'gantt' | 'table'>('gantt')
   const [editWorkload, setEditWorkload] = useState(false)
+  const [editStages, setEditStages] = useState(false)
 
   function setFte(memberId: string, phaseIdx: number, value: number) {
     update(p.id, (prj) => ({
@@ -18,6 +19,21 @@ export function SchedulePage() {
         t.id === memberId ? { ...t, fteByPhase: t.fteByPhase.map((f, i) => (i === phaseIdx ? value : f)) } : t,
       ),
     }))
+  }
+
+  // Lengthen / shorten a stage — recompute all phase boundaries + project duration.
+  function setStageDuration(phaseId: string, months: number) {
+    const m = Math.max(1, Math.round(months) || 1)
+    update(p.id, (prj) => {
+      let cursor = 0
+      const phases = prj.phases.map((ph) => {
+        const dur = ph.id === phaseId ? m : ph.endMonth - ph.startMonth + 1
+        const next = { ...ph, startMonth: cursor, endMonth: cursor + dur - 1 }
+        cursor += dur
+        return next
+      })
+      return { ...prj, phases, durationMonths: cursor }
+    })
   }
 
   return (
@@ -36,16 +52,49 @@ export function SchedulePage() {
             </button>
           ))}
         </div>
-        <Button
-          variant={editWorkload ? 'primary' : 'soft'}
-          onClick={() => {
-            setView('gantt')
-            setEditWorkload((e) => !e)
-          }}
-        >
-          {editWorkload ? '✓ Done editing' : '✎ Edit workload'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant={editStages ? 'primary' : 'soft'}
+            onClick={() => { setView('gantt'); setEditStages((e) => !e) }}
+          >
+            {editStages ? '✓ Done' : '⇿ Edit stages'}
+          </Button>
+          <Button
+            variant={editWorkload ? 'primary' : 'soft'}
+            onClick={() => { setView('gantt'); setEditWorkload((e) => !e) }}
+          >
+            {editWorkload ? '✓ Done' : '✎ Edit workload'}
+          </Button>
+        </div>
       </div>
+
+      {editStages && (
+        <Card className="p-5">
+          <h3 className="mb-1 text-sm font-semibold">Lengthen or shorten stages</h3>
+          <p className="mb-3 text-xs text-muted">Change a stage's length in months — the timeline and downstream stages shift automatically.</p>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {p.phases.map((ph) => (
+              <div key={ph.id} className="flex items-center justify-between rounded-xl border border-line px-4 py-2.5">
+                <div>
+                  <div className="text-sm font-medium">{ph.name}</div>
+                  <div className="text-xs text-muted">{calLabel(p, ph.startMonth)} → {calLabel(p, ph.endMonth)}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={ph.endMonth - ph.startMonth + 1}
+                    onChange={(e) => setStageDuration(ph.id, Number(e.target.value))}
+                    className="w-16 rounded-lg border border-line px-2.5 py-1.5 text-sm outline-none focus:border-navy"
+                  />
+                  <span className="text-xs text-muted">months</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted">Project duration: {p.durationMonths} months.</p>
+        </Card>
+      )}
 
       {editWorkload && (
         <Card className="overflow-x-auto p-5">

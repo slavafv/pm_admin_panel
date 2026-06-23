@@ -54,6 +54,7 @@ const team: Project['team'] = [
     color: '#f0a830',
     fteByPhase: [0.5, 0.5, 0.5],
     capacity: 1,
+    availability: 'On leave',
   },
 ]
 
@@ -123,11 +124,13 @@ export const rakProject: Project = {
   ],
 
   equipment: [
-    { name: 'Treatment unit #1', category: 'Treatment', phase: 'Construction', status: 'Ordered' },
+    // serviceUntilMonth = month (from project start) when lease/cert ends
+    { name: 'Tower crane (leased)', category: 'Heavy plant', phase: 'Construction', status: 'In use', serviceUntilMonth: 28 },
+    { name: 'Treatment unit #1', category: 'Treatment', phase: 'Construction', status: 'Ordered', serviceUntilMonth: 40 },
     { name: 'Treatment unit #2', category: 'Treatment', phase: 'Construction', status: 'Ordered' },
     { name: 'Treatment unit #3', category: 'Treatment', phase: 'Construction', status: 'Planned' },
     { name: 'Piping system', category: 'Civil', phase: 'Construction', status: 'Planned' },
-    { name: 'Site vehicles (×4)', category: 'Logistics', phase: 'Design & Permitting', status: 'Delivered' },
+    { name: 'Site vehicles (×4)', category: 'Logistics', phase: 'Construction', status: 'Delivered', serviceUntilMonth: 18 },
     { name: 'Lab equipment', category: 'Commissioning', phase: 'Commissioning', status: 'Planned' },
   ],
 
@@ -366,8 +369,8 @@ export const barjeelProject: Project = {
   domain: 'Energy',
   location: 'Multiple government buildings, RAK',
   description: 'Energy-efficiency retrofit of the first batch of RAK government buildings — HVAC, lighting and controls upgrade with measured savings.',
-  startMonthLabel: 'Jan 2024',
-  startYear: 2024,
+  startMonthLabel: 'Jan 2025',
+  startYear: 2025,
   startMonthIndex: 0,
   durationMonths: 12,
   totalBudget: 15_200_000,
@@ -513,7 +516,7 @@ const extraProjects: Project[] = [
   makeProject({ id: 'julphar-cooling', name: 'Julphar District Cooling', department: 'RAK Public Services Department', contractType: 'EPC — Engineering, Procurement, Construction', domain: 'Energy', location: 'Julphar District, RAK', description: 'District cooling plant and distribution network for the Julphar towers area.', startYear: 2025, startMonthIndex: 9, startMonthLabel: 'Oct 2025', durationMonths: 28, totalBudget: 210_000_000, spentBudget: 64_000_000, status: 'delivery', overallProgress: 31, health: 'amber', healthNote: 'Needs attention', pm: { name: 'Aisha Obaid', initials: 'AO', color: '#4caf82' } }),
   makeProject({ id: 'schools-solar', name: 'RAK Schools Solar Rollout', department: 'RAK Energy Efficiency Office', contractType: 'Framework', domain: 'Energy', location: '40 schools, RAK', description: 'Rooftop solar PV across 40 public schools with net-metering.', startYear: 2026, startMonthIndex: 1, startMonthLabel: 'Feb 2026', durationMonths: 20, totalBudget: 47_500_000, spentBudget: 6_300_000, status: 'onhold', overallProgress: 12, health: 'red', healthNote: 'At risk', pm: { name: 'Tariq Nasser', initials: 'TN', color: '#e2574c' } }),
   makeProject({ id: 'marjan-drainage', name: 'Marjan Island Drainage', department: 'RAK Public Services Department', contractType: 'PPP — Public-Private Partnership', domain: 'Water', location: 'Al Marjan Island, RAK', description: 'Stormwater drainage and pumping network for Al Marjan Island.', startYear: 2025, startMonthIndex: 3, startMonthLabel: 'Apr 2025', durationMonths: 30, totalBudget: 162_000_000, spentBudget: 88_000_000, status: 'delivery', overallProgress: 54, health: 'green', healthNote: 'On track', pm: { name: 'Khalid Saif', initials: 'KS', color: '#1a2235' } }),
-  makeProject({ id: 'heritage-souq', name: 'Heritage Souq Restoration', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Buildings', location: 'Old Town, RAK', description: 'Restoration of the historic souq with conservation-grade works.', startYear: 2023, startMonthIndex: 5, startMonthLabel: 'Jun 2023', durationMonths: 18, totalBudget: 33_400_000, status: 'completed', overallProgress: 100, health: 'green', healthNote: 'Completed', pm: { name: 'Maryam Ali', initials: 'MA', color: '#f0a830' } }),
+  makeProject({ id: 'heritage-souq', name: 'Heritage Souq Restoration', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Buildings', location: 'Old Town, RAK', description: 'Restoration of the historic souq with conservation-grade works.', startYear: 2025, startMonthIndex: 0, startMonthLabel: 'Jan 2025', durationMonths: 11, totalBudget: 33_400_000, status: 'completed', overallProgress: 100, health: 'green', healthNote: 'Completed', pm: { name: 'Maryam Ali', initials: 'MA', color: '#f0a830' } }),
   makeProject({ id: 'smart-traffic', name: 'RAK Smart Traffic — Phase 1', department: 'RAK Urban Planning Dept', contractType: 'Design-Build', domain: 'Transport', location: 'City-wide, RAK', description: 'Adaptive traffic signals and sensors across 25 key intersections.', startYear: 2026, startMonthIndex: 10, startMonthLabel: 'Nov 2026 (planned)', durationMonths: 16, totalBudget: 29_000_000, status: 'presale', overallProgress: 0, health: 'green', healthNote: 'On track', pm: { name: 'Hessa Rashed', initials: 'HR', color: '#3b82f6' } }),
 ]
 

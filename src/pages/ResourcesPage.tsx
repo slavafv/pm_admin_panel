@@ -4,7 +4,10 @@ import { useStore } from '../store/useStore'
 import { Card, Avatar, Chip, Button } from '../components/ui/primitives'
 import { InlineAddForm } from '../components/ui/InlineAddForm'
 import { aed } from '../lib/format'
-import type { AccessLevel, Equipment, TeamMember, TeamRole } from '../data/types'
+import { calLabel } from '../lib/metrics'
+import type { AccessLevel, Availability, Equipment, TeamMember, TeamRole } from '../data/types'
+
+const AVAILABILITY: Availability[] = ['Available', 'On leave', 'Limited']
 
 const TABS = ['Team & roles', 'Equipment & assets', 'Budget']
 const ACCESS_LEVELS: AccessLevel[] = ['Full access', 'Budget view', 'Execution view', 'Read only']
@@ -60,6 +63,9 @@ export function ResourcesPage() {
   function setAccess(id: string, access: AccessLevel) {
     update(p.id, (prj) => ({ ...prj, team: prj.team.map((t) => (t.id === id ? { ...t, access } : t)) }))
   }
+  function setAvailability(id: string, availability: Availability) {
+    update(p.id, (prj) => ({ ...prj, team: prj.team.map((t) => (t.id === id ? { ...t, availability } : t)) }))
+  }
   function setBudgetLines(lines: typeof p.budgetLines) {
     update(p.id, (prj) => ({ ...prj, budgetLines: lines, totalBudget: lines.reduce((a, b) => a + b.allocated, 0) }))
   }
@@ -83,9 +89,11 @@ export function ResourcesPage() {
             <span className="text-xs text-muted">{p.team.length} member{p.team.length === 1 ? '' : 's'}</span>
           </div>
           <table className="mt-2 w-full">
-            <thead className="border-y border-line bg-[#fafbfc]"><tr><Th>Member</Th><Th>Role</Th><Th>Access level</Th><Th>Remove</Th></tr></thead>
+            <thead className="border-y border-line bg-[#fafbfc]"><tr><Th>Member</Th><Th>Role</Th><Th>Access level</Th><Th>Availability</Th><Th>Remove</Th></tr></thead>
             <tbody>
-              {p.team.map((m) => (
+              {p.team.map((m) => {
+                const av = m.availability ?? 'Available'
+                return (
                 <tr key={m.id} className="border-b border-line last:border-0">
                   <Td><div className="flex items-center gap-3"><Avatar initials={m.initials} color={m.color} ring={false} /><span className="font-semibold">{m.name}</span></div></Td>
                   <Td>{m.role}</Td>
@@ -95,9 +103,15 @@ export function ResourcesPage() {
                       {ACCESS_LEVELS.map((a) => <option key={a}>{a}</option>)}
                     </select>
                   </Td>
+                  <Td>
+                    <select value={av} onChange={(e) => setAvailability(m.id, e.target.value as Availability)}
+                      className={`rounded-lg border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-navy ${av === 'On leave' ? 'border-red text-red' : av === 'Limited' ? 'border-amber text-amber' : 'border-line'}`}>
+                      {AVAILABILITY.map((a) => <option key={a}>{a}</option>)}
+                    </select>
+                  </Td>
                   <Td><RemoveBtn onClick={() => removeTeamMember(p.id, m.id)} disabled={m.id === p.pmId} title={m.id === p.pmId ? 'The project manager cannot be removed' : 'Remove member'} /></Td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
           <div className="border-t border-line p-4">
@@ -121,27 +135,37 @@ export function ResourcesPage() {
       {tab === 1 && (
         <Card className="overflow-hidden">
           <div className="px-5 pt-4 pb-2 text-sm font-semibold">Equipment & assets</div>
+          <p className="px-5 pb-2 text-xs text-muted">"Service until" tracks lease / certification end. If it ends before the assigned stage finishes, a warning is raised on the project Overview.</p>
           <table className="w-full">
-            <thead className="border-y border-line bg-[#fafbfc]"><tr><Th>Asset</Th><Th>Category</Th><Th>Assigned phase</Th><Th>Status</Th><Th>Remove</Th></tr></thead>
+            <thead className="border-y border-line bg-[#fafbfc]"><tr><Th>Asset</Th><Th>Category</Th><Th>Assigned phase</Th><Th>Status</Th><Th>Service until</Th><Th>Remove</Th></tr></thead>
             <tbody>
-              {p.equipment.map((e, i) => (
+              {p.equipment.map((e, i) => {
+                const phase = p.phases.find((ph) => ph.name === e.phase)
+                const expiring = e.serviceUntilMonth != null && phase != null && e.serviceUntilMonth < phase.endMonth
+                return (
                 <tr key={i} className="border-b border-line last:border-0">
                   <Td className="font-semibold">{e.name}</Td><Td>{e.category}</Td><Td>{e.phase}</Td><Td><Chip>{e.status}</Chip></Td>
+                  <Td>
+                    {e.serviceUntilMonth != null
+                      ? <span className={expiring ? 'font-semibold text-red' : 'text-ink'}>{expiring ? '⚠ ' : ''}{calLabel(p, e.serviceUntilMonth)}</span>
+                      : <span className="text-muted">—</span>}
+                  </Td>
                   <Td><RemoveBtn onClick={() => update(p.id, (prj) => ({ ...prj, equipment: prj.equipment.filter((_, idx) => idx !== i) }))} /></Td>
                 </tr>
-              ))}
+              )})}
               {p.equipment.length === 0 && <tr><Td className="text-muted">No equipment or assets registered yet.</Td></tr>}
             </tbody>
           </table>
           <div className="border-t border-line p-4">
             <InlineAddForm addLabel="＋ Add equipment / asset"
               fields={[
-                { key: 'name', placeholder: 'Asset name', width: '180px' },
-                { key: 'category', placeholder: 'Category', width: '140px' },
-                { key: 'phase', placeholder: 'Assigned phase', width: '160px' },
+                { key: 'name', placeholder: 'Asset name', width: '170px' },
+                { key: 'category', placeholder: 'Category', width: '130px' },
+                { key: 'phase', placeholder: 'Assigned phase', width: '150px' },
                 { key: 'status', type: 'select', options: EQUIP_STATUS, placeholder: 'Status' },
+                { key: 'serviceUntil', type: 'number', placeholder: 'Service mo.', width: '110px', required: false },
               ]}
-              onAdd={(v) => update(p.id, (prj) => ({ ...prj, equipment: [...prj.equipment, { name: v.name, category: v.category, phase: v.phase, status: v.status as Equipment['status'] }] }))}
+              onAdd={(v) => update(p.id, (prj) => ({ ...prj, equipment: [...prj.equipment, { name: v.name, category: v.category, phase: v.phase, status: v.status as Equipment['status'], serviceUntilMonth: v.serviceUntil ? Number(v.serviceUntil) : undefined }] }))}
             />
           </div>
         </Card>

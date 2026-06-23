@@ -19,6 +19,8 @@ export type TeamRole =
   | 'Observer'
   | 'External Partner'
 
+export type Availability = 'Available' | 'On leave' | 'Limited'
+
 export interface TeamMember {
   id: string
   name: string
@@ -30,6 +32,8 @@ export interface TeamMember {
   fteByPhase: number[]
   /** FTE capacity available (per month) */
   capacity: number
+  /** Current availability — feeds staffing alerts */
+  availability?: Availability
 }
 
 export interface InternalStakeholder {
@@ -56,6 +60,8 @@ export interface Equipment {
   category: string
   phase: string
   status: 'Ordered' | 'Delivered' | 'In use' | 'Planned'
+  /** Month index (relative to project start) when lease/service/certification ends. */
+  serviceUntilMonth?: number
 }
 
 export interface Dependency {

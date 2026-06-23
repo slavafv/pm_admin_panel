@@ -4,6 +4,7 @@ import { Card, CardHead, RagDot, ProgressBar, Avatar, Chip } from '../components
 import { aed } from '../lib/format'
 import { currentPhase, nextMilestone, teamCapacity, issueCounts, calLabel } from '../lib/metrics'
 import { startLabel, endLabel, daysRemaining, spentPct } from '../lib/project'
+import { deriveAlerts, healthExplanation } from '../lib/alerts'
 import type { ReactNode } from 'react'
 import type { Phase, Project } from '../data/types'
 
@@ -81,6 +82,7 @@ export function SummaryPage() {
   const issues = issueCounts(p)
   const pct = spentPct(p)
   const pm = p.team.find((t) => t.id === p.pmId) ?? p.team[0]
+  const alerts = deriveAlerts(p)
 
   const durationText =
     p.status === 'completed'
@@ -110,6 +112,33 @@ export function SummaryPage() {
         <KpiCard label="Next milestone" value={next ? `${next.days} days` : 'All complete'} sub={next?.milestone.name} />
         <KpiCard label="Open issues" tone={issues.total > 0 ? 'amber' : undefined} value={issues.total} sub={issues.total ? `${issues.by.medium} medium · ${issues.by.low} low` : 'None open'} />
       </div>
+
+      {/* Attention & recommendations — only when not green or alerts exist */}
+      {(p.health !== 'green' || alerts.length > 0) && (
+        <Card className={`border-l-4 ${p.health === 'red' ? 'border-l-red' : 'border-l-amber'}`}>
+          <div className="px-5 pt-4">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <RagDot rag={p.health} /> Attention & recommendations
+            </h3>
+            <p className="mt-1 text-sm text-muted">{healthExplanation(p)}</p>
+          </div>
+          <div className="grid gap-2 px-5 py-4">
+            {alerts.length === 0 ? (
+              <p className="text-sm text-muted">No specific alerts — health flag set manually.</p>
+            ) : (
+              alerts.map((a, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl bg-[#f7f8fb] px-3 py-2.5">
+                  <span className={`mt-0.5 rounded-md px-2 py-0.5 text-[10px] font-semibold ${a.level === 'risk' ? 'bg-red-soft text-red' : 'bg-amber-soft text-amber'}`}>{a.area}</span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-ink">{a.text}</div>
+                    <div className="text-xs text-muted">→ {a.recommendation}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Stage timeline */}
       <Card>

@@ -99,7 +99,7 @@ export function ReportsPage() {
             return (
               <button key={sec} onClick={() => toggle(sec)}
                 className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition ${on ? 'border-navy bg-[#f7f8fb] font-medium text-ink' : 'border-line text-[#475467] hover:bg-[#f3f5f9]'}`}>
-                <span className={`grid h-4 w-4 place-items-center rounded border ${on ? 'border-navy bg-navy text-white' : 'border-[#c2c7d2]'}`}>{on ? '✓' : ''}</span>
+                <span className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] leading-none ${on ? 'border-navy bg-navy text-white' : 'border-[#c2c7d2]'}`}>{on ? '✓' : ''}</span>
                 {sec}
               </button>
             )
