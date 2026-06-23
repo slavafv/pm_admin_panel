@@ -92,11 +92,12 @@ export function ResourcesPage() {
             <span className="text-xs text-muted">{p.team.length} member{p.team.length === 1 ? '' : 's'}</span>
           </div>
           <table className="mt-2 w-full">
-            <thead className="border-y border-line bg-[#fafbfc]"><tr><Th>Member</Th><Th>Role</Th><Th>Access level</Th><Th>Availability</Th><Th>Utilisation</Th><Th>Remove</Th></tr></thead>
+            <thead className="border-y border-line bg-[#fafbfc]"><tr><Th>Member</Th><Th>Role</Th><Th>Access level</Th><Th>Availability</Th><Th>Allocation</Th><Th>Remove</Th></tr></thead>
             <tbody>
               {p.team.map((m) => {
                 const av = m.availability ?? 'Available'
-                const util = Math.round(((m.fteByPhase[curIdx] ?? 0) / (m.capacity || 1)) * 100)
+                const fte = m.fteByPhase[curIdx] ?? 0
+                const over = fte > (m.capacity || 1)
                 return (
                 <tr key={m.id} className="border-b border-line last:border-0">
                   <Td><div className="flex items-center gap-3"><Avatar initials={m.initials} color={m.color} ring={false} /><span className="font-semibold">{m.name}</span></div></Td>
@@ -115,9 +116,9 @@ export function ResourcesPage() {
                   </Td>
                   <Td>
                     <div className="flex items-center gap-2">
-                      <span className={`w-9 text-sm font-semibold ${util > 100 ? 'text-red' : 'text-ink'}`}>{util}%</span>
+                      <span className={`w-14 text-sm font-semibold ${over ? 'text-red' : 'text-ink'}`}>{fte} FTE</span>
                       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#eef0f4]">
-                        <div className={`h-full rounded-full ${util > 100 ? 'bg-red' : 'bg-green'}`} style={{ width: `${Math.min(100, util)}%` }} />
+                        <div className={`h-full rounded-full ${over ? 'bg-red' : 'bg-green'}`} style={{ width: `${Math.min(100, (fte / (m.capacity || 1)) * 100)}%` }} />
                       </div>
                     </div>
                   </Td>
