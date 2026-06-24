@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Logo } from './Logo'
 import { RoleSwitcher } from './RoleSwitcher'
 import { useStore } from '../store/useStore'
+import { canSeeWorkspaceTools } from '../lib/rbac'
 
 function projectIdFromPath(pathname: string): string | null {
   const m = pathname.match(/\/projects\/([^/]+)/)
@@ -68,6 +69,8 @@ export function AppShell() {
   const location = useLocation()
   const pid = projectIdFromPath(location.pathname)
   const project = useStore((s) => (pid ? s.projects.find((p) => p.id === pid) : undefined))
+  const role = useStore((s) => s.role)
+  const workspaceTools = canSeeWorkspaceTools(role)
 
   return (
     <div className="flex h-full">
@@ -80,8 +83,8 @@ export function AppShell() {
         <nav className="flex-1 overflow-y-auto px-3 pb-3">
           <GroupLabel>Workspace</GroupLabel>
           <NavItem to="/" end label="All projects" icon={<Icon d={ICONS.projects} />} />
-          <NavItem to="/employees" label="Employees" icon={<Icon d={ICONS.employees} />} />
-          <NavItem to="/equipment" label="Equipment" icon={<Icon d={ICONS.equipment} />} />
+          {workspaceTools && <NavItem to="/employees" label="Employees" icon={<Icon d={ICONS.employees} />} />}
+          {workspaceTools && <NavItem to="/equipment" label="Equipment" icon={<Icon d={ICONS.equipment} />} />}
 
           {/* Contextual project sections — only inside an open project */}
           {project && (
@@ -99,9 +102,6 @@ export function AppShell() {
               <NavItem to={`/projects/${pid}/dashboards`} label="Dashboards" icon={<Icon d={ICONS.dashboards} />} />
               <NavItem to={`/projects/${pid}/risks`} label="Risks" icon={<Icon d={ICONS.risks} />} badge={project.risks.length} />
               <NavItem to={`/projects/${pid}/reports`} label="Reports" icon={<Icon d={ICONS.reports} />} />
-
-              <GroupLabel>Settings</GroupLabel>
-              <NavItem to={`/projects/${pid}/settings`} label="Project settings" icon={<Icon d={ICONS.settings} />} />
             </>
           )}
         </nav>

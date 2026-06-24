@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { Card, Avatar, Pill, ProgressBar } from '../components/ui/primitives'
 import { aggregateEmployees, activeEmployeeCount, yearBar, type EmployeeAggregate } from '../lib/workspace'
+import { canSeeWorkspaceTools } from '../lib/rbac'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const YEAR = 2026
@@ -21,12 +22,15 @@ function AvailabilityPill({ a }: { a: EmployeeAggregate['availability'] }) {
 
 export function EmployeesPage() {
   const projects = useStore((s) => s.projects)
+  const role = useStore((s) => s.role)
   const [view, setView] = useState<'table' | 'gantt'>('table')
   const [q, setQ] = useState('')
 
   const employees = useMemo(() => aggregateEmployees(projects), [projects])
   const filtered = employees.filter((e) => !q || e.name.toLowerCase().includes(q.toLowerCase()))
   const active = activeEmployeeCount(employees)
+
+  if (!canSeeWorkspaceTools(role)) return <Navigate to="/" replace />
 
   return (
     <div>

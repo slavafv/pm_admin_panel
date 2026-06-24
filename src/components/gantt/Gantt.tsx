@@ -47,7 +47,7 @@ export function Gantt({ project, live = false }: { project: Project; live?: bool
           >
             {criticalPath ? '● Critical path on' : '○ Show critical path'}
           </button>
-          <span className="text-xs text-muted">Tip: hover a phase to see dates · mark a phase complete to update dashboards</span>
+          <span className="cursor-help text-muted" title="Hover a phase to see dates. Mark a phase complete to update the dashboards. FTE bars: green = ok, amber = on leave, red = over-allocated.">ⓘ</span>
         </div>
       )}
 
@@ -138,20 +138,24 @@ export function Gantt({ project, live = false }: { project: Project; live?: bool
               {project.phases.map((ph, i) => {
                 const fte = member.fteByPhase[i] ?? 0
                 if (fte <= 0) return null
-                const overloaded = fte > 1
+                const onLeave = member.availability === 'On leave'
+                const overloaded = fte > member.capacity
+                // semantic colour: overloaded = red, on leave = amber, else green
+                const bg = overloaded ? RAG_HEX.red : onLeave ? RAG_HEX.amber : RAG_HEX.green
                 return (
                   <div
                     key={ph.id}
+                    title={onLeave ? `${member.name} is on leave` : overloaded ? `${member.name} over-allocated` : undefined}
                     className="absolute top-1/2 -translate-y-1/2 overflow-hidden rounded-md text-[10px] font-semibold text-white"
                     style={{
                       left: `calc(${leftPct(ph.startMonth)} + 2px)`,
                       width: `calc(${spanPct(ph.endMonth - ph.startMonth + 1)} - 4px)`,
                       height: 16,
-                      background: overloaded ? RAG_HEX.red : member.color,
-                      opacity: overloaded ? 1 : 0.35 + fte * 0.5,
+                      background: bg,
+                      opacity: onLeave ? 0.55 : 0.55 + fte * 0.4,
                     }}
                   >
-                    <span className="absolute inset-0 flex items-center truncate px-2 text-white">{fte} FTE</span>
+                    <span className="absolute inset-0 flex items-center truncate px-2 text-white">{fte} FTE{onLeave ? ' · leave' : ''}</span>
                   </div>
                 )
               })}

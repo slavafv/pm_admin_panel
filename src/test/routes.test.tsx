@@ -68,11 +68,12 @@ describe('project pages render without crashing', () => {
     expect(screen.getByText('Assumptions log')).toBeInTheDocument()
   })
 
-  it('Settings page has general/stakeholders/access tabs', () => {
-    renderAt('/projects/rak-wwtp-1/settings')
-    expect(screen.getByText('General — parameters set during creation')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Access & permissions' }))
-    expect(screen.getByText(/Access levels are saved per member/)).toBeInTheDocument()
+  it('risk register shows the new columns + score', () => {
+    renderAt('/projects/rak-wwtp-1/risks')
+    expect(screen.getByText('Risk register')).toBeInTheDocument()
+    expect(screen.getByText('R-01')).toBeInTheDocument()
+    // score = P×I, e.g. 3×4 = 12
+    expect(screen.getByText(/12 · medium/)).toBeInTheDocument()
   })
 
   it('Schedule renders gantt + edit workload', () => {
@@ -133,6 +134,39 @@ describe('workspace pages (derived from project data)', () => {
   })
 })
 
+describe('RBAC simulation', () => {
+  it('Department Head can create projects and sees all', () => {
+    renderAt('/', 'department_head')
+    expect(screen.getByText('＋ Create project')).toBeInTheDocument()
+    expect(screen.getAllByText(/RAK Wastewater Treatment Plant/i).length).toBeGreaterThan(0)
+  })
+
+  it('Director General cannot create but sees workspace nav + all projects', () => {
+    renderAt('/', 'director_general')
+    expect(screen.queryByText('＋ Create project')).not.toBeInTheDocument()
+    expect(screen.getByText('Employees')).toBeInTheDocument()
+  })
+
+  it('PM sees only their own projects, no create, no workspace nav', () => {
+    renderAt('/', 'project_manager')
+    expect(screen.queryByText('＋ Create project')).not.toBeInTheDocument()
+    expect(screen.queryByText('Employees')).not.toBeInTheDocument()
+    // Ahmed manages RAK + Julphar + Marjan; should NOT see Barjeel (different PM)
+    expect(screen.getByText('RAK Wastewater Treatment Plant — Phase 1')).toBeInTheDocument()
+    expect(screen.queryByText('Barjeel Retrofit — Batch 1')).not.toBeInTheDocument()
+  })
+
+  it('PM is blocked from opening a project they do not manage', () => {
+    renderAt('/projects/barjeel-retrofit', 'project_manager')
+    expect(screen.getByText(/don't have access to this project/)).toBeInTheDocument()
+  })
+
+  it('PM redirected away from workspace Employees page', () => {
+    renderAt('/employees', 'project_manager')
+    expect(screen.queryByRole('heading', { name: 'Employees', level: 1 })).not.toBeInTheDocument()
+  })
+})
+
 describe('role-based dashboards', () => {
   it('DG shows Vision KPIs; PM shows task board', () => {
     renderAt('/projects/rak-wwtp-1/dashboards', 'director_general')
@@ -145,7 +179,7 @@ describe('role-based dashboards', () => {
 
 describe('create project modal', () => {
   it('requires fields, then creates a project and opens it', async () => {
-    renderAt('/')
+    renderAt('/', 'department_head')
     fireEvent.click(screen.getByText('＋ Create project'))
     fireEvent.change(screen.getByPlaceholderText(/RAK Wastewater/), { target: { value: 'Corniche Upgrade' } })
     const selects = screen.getAllByRole('combobox')

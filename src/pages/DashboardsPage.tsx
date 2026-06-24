@@ -2,10 +2,12 @@ import { useNavigate } from 'react-router-dom'
 import { useProject } from './ProjectLayout'
 import { useStore } from '../store/useStore'
 import { roleMeta } from '../config/roles'
-import { Card, CardHead, RagDot, ProgressBar, Avatar, Chip, Button } from '../components/ui/primitives'
+import { Card, CardHead, RagDot, ProgressBar, Avatar, Chip, Pill, Button } from '../components/ui/primitives'
 import { BudgetDonut, BurnChart } from '../components/dashboards/charts'
 import { aed } from '../lib/format'
 import { nextMilestone, budgetVariance, issueCounts, calLabel, calDays } from '../lib/metrics'
+import { deriveAlerts } from '../lib/alerts'
+import { riskScore, severityOf, SEVERITY_TONE, projectRiskLevel } from '../lib/risk'
 import type { Project, RAG } from '../data/types'
 
 const RAG_HEX: Record<RAG, string> = { green: '#4caf82', amber: '#f0a830', red: '#e2574c' }
@@ -31,15 +33,22 @@ function RoleBanner() {
 function DirectorGeneral({ p }: { p: Project }) {
   const next = nextMilestone(p)
   const variance = budgetVariance(p)
+  const alerts = deriveAlerts(p)
   const partnersRag: RAG = p.externalPartners.some((x) => x.status === 'red')
     ? 'red'
     : p.externalPartners.some((x) => x.status === 'amber')
       ? 'amber'
       : 'green'
+  const level = projectRiskLevel(p.risks)
+  const riskRag: RAG = level === 'high' ? 'red' : level === 'medium' ? 'amber' : 'green'
+  // Schedule reflects delivery-affecting alerts (resourcing, equipment, schedule)
+  const scheduleRag: RAG = alerts.some((a) => ['Resources', 'Equipment', 'Schedule'].includes(a.area)) ? 'amber' : 'green'
+  const budgetRag: RAG = variance.underBy < 0 ? 'amber' : 'green'
+  // sub-items are derived so the aggregate (any amber → amber) stays consistent
   const sub = [
-    { label: 'Schedule', rag: 'green' as RAG },
-    { label: 'Budget', rag: 'green' as RAG },
-    { label: 'Risk', rag: 'amber' as RAG },
+    { label: 'Schedule', rag: scheduleRag },
+    { label: 'Budget', rag: budgetRag },
+    { label: 'Risk', rag: riskRag },
     { label: 'Partners', rag: partnersRag },
   ]
   return (
@@ -84,7 +93,7 @@ function DirectorGeneral({ p }: { p: Project }) {
       </Card>
 
       <Card>
-        <CardHead title="Milestone status" />
+        <CardHead title="Milestone status" action={next ? <span className="rounded-full bg-amber-soft px-2.5 py-1 text-xs font-semibold text-amber">Next: {next.milestone.name} · {next.days}d</span> : undefined} />
         <div className="px-5 pb-4">
           {p.milestones.map((m) => (
             <div key={m.id} className="flex items-center justify-between border-b border-line py-2.5 last:border-0">
@@ -103,17 +112,19 @@ function DirectorGeneral({ p }: { p: Project }) {
       <Card>
         <CardHead title="Top risks" />
         <div className="px-5 pb-4">
-          {p.risks.map((r) => (
-            <div key={r.risk} className="flex items-center justify-between border-b border-line py-2.5 last:border-0">
-              <span className="text-sm font-medium">{r.risk}</span>
-              <div className="flex items-center gap-1.5 text-xs">
-                <Chip tone={r.probability === 'High' ? 'red' : r.probability === 'Medium' ? 'amber' : 'gray'}>
-                  {r.probability}
-                </Chip>
-                <Chip tone={r.impact === 'High' ? 'red' : r.impact === 'Medium' ? 'amber' : 'gray'}>{r.impact}</Chip>
+          {[...p.risks].sort((a, b) => riskScore(b) - riskScore(a)).slice(0, 3).map((r) => {
+            const score = riskScore(r)
+            return (
+              <div key={r.id} className="flex items-center justify-between border-b border-line py-2.5 last:border-0">
+                <div className="min-w-0">
+                  <span className="text-sm font-medium">{r.risk}</span>
+                  <span className="ml-2 text-xs text-muted">P{r.probability}×I{r.impact}</span>
+                </div>
+                <Pill tone={SEVERITY_TONE[severityOf(score)]}>{score}</Pill>
               </div>
-            </div>
-          ))}
+            )
+          })}
+          {p.risks.length === 0 && <p className="py-2 text-sm text-muted">No risks logged.</p>}
         </div>
       </Card>
 

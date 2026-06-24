@@ -81,11 +81,17 @@ export interface Dependency {
   status: RAG
 }
 
+export type RiskStatus = 'Open' | 'Mitigating' | 'Monitoring' | 'Closed'
+
 export interface Risk {
+  id: string
   risk: string
-  probability: 'Low' | 'Medium' | 'High'
-  impact: 'Low' | 'Medium' | 'High'
+  /** 1–5 */
+  probability: number
+  /** 1–5 */
+  impact: number
   mitigation: string
+  status: RiskStatus
   owner: string
 }
 

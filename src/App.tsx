@@ -10,7 +10,6 @@ import { SchedulePage } from './pages/SchedulePage'
 import { DashboardsPage } from './pages/DashboardsPage'
 import { RisksPage } from './pages/RisksPage'
 import { ReportsPage } from './pages/ReportsPage'
-import { SettingsPage } from './pages/SettingsPage'
 
 export function AppRoutes() {
   return (
@@ -28,7 +27,8 @@ export function AppRoutes() {
           <Route path="dashboards" element={<DashboardsPage />} />
           <Route path="risks" element={<RisksPage />} />
           <Route path="reports" element={<ReportsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          {/* settings removed; legacy path falls back to overview */}
+          <Route path="settings" element={<Navigate to=".." relative="path" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

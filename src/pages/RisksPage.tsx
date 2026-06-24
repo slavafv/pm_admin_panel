@@ -1,10 +1,11 @@
 import { useProject } from './ProjectLayout'
 import { useStore } from '../store/useStore'
-import { Card, Chip, RagDot } from '../components/ui/primitives'
+import { Card, Pill, RagDot } from '../components/ui/primitives'
 import { InlineAddForm } from '../components/ui/InlineAddForm'
-import type { RAG, Risk } from '../data/types'
+import { riskScore, severityOf, SEVERITY_TONE, STATUS_TONE } from '../lib/risk'
+import type { RAG, RiskStatus } from '../data/types'
 
-function Th({ children }: { children: React.ReactNode }) {
+function Th({ children }: { children?: React.ReactNode }) {
   return <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted">{children}</th>
 }
 function Td({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
@@ -16,45 +17,59 @@ function RemoveBtn({ onClick }: { onClick: () => void }) {
       className="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-red-soft hover:text-red">🗑</button>
   )
 }
-const sevTone = (v: string): 'gray' | 'amber' | 'red' => (v === 'High' ? 'red' : v === 'Medium' ? 'amber' : 'gray')
 
 export function RisksPage() {
   const p = useProject()
   const update = useStore((s) => s.updateProject)
 
+  function nextId(): string {
+    const n = p.risks.length + 1
+    return `R-${String(n).padStart(2, '0')}`
+  }
+
   return (
     <div className="grid gap-5">
-      <p className="text-sm text-muted">Active risk management — the register, blocking dependencies, and assumptions that need validation. Updated as the project runs.</p>
+      <p className="text-sm text-muted">Active risk management — the register, blocking dependencies, and assumptions that need validation. Risk score = Probability × Impact (1–25).</p>
 
       {/* Risk register */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-x-auto">
         <div className="px-5 pt-4 pb-2 text-sm font-semibold">Risk register</div>
-        <table className="w-full">
-          <thead className="border-y border-line bg-[#fafbfc]"><tr><Th>Risk</Th><Th>Probability</Th><Th>Impact</Th><Th>Mitigation</Th><Th>Owner</Th><Th>Remove</Th></tr></thead>
+        <table className="w-full min-w-[920px]">
+          <thead className="border-y border-line bg-[#fafbfc]"><tr>
+            <Th>ID</Th><Th>Risk description</Th><Th>Probability</Th><Th>Impact</Th><Th>Score</Th><Th>Mitigation action</Th><Th>Owner</Th><Th>Status</Th><Th></Th>
+          </tr></thead>
           <tbody>
-            {p.risks.map((r, i) => (
-              <tr key={i} className="border-b border-line last:border-0">
-                <Td className="font-semibold">{r.risk}</Td>
-                <Td><Chip tone={sevTone(r.probability)}>{r.probability}</Chip></Td>
-                <Td><Chip tone={sevTone(r.impact)}>{r.impact}</Chip></Td>
-                <Td className="text-muted">{r.mitigation}</Td>
-                <Td className="text-muted">{r.owner}</Td>
-                <Td><RemoveBtn onClick={() => update(p.id, (prj) => ({ ...prj, risks: prj.risks.filter((_, idx) => idx !== i) }))} /></Td>
-              </tr>
-            ))}
+            {p.risks.map((r, i) => {
+              const score = riskScore(r)
+              const sev = severityOf(score)
+              return (
+                <tr key={i} className="border-b border-line last:border-0">
+                  <Td className="font-mono text-xs text-muted">{r.id}</Td>
+                  <Td className="font-semibold">{r.risk}</Td>
+                  <Td>{r.probability} / 5</Td>
+                  <Td>{r.impact} / 5</Td>
+                  <Td><Pill tone={SEVERITY_TONE[sev]}>{score} · {sev}</Pill></Td>
+                  <Td className="text-muted">{r.mitigation}</Td>
+                  <Td className="text-muted">{r.owner}</Td>
+                  <Td><Pill tone={STATUS_TONE[r.status]}>{r.status}</Pill></Td>
+                  <Td><RemoveBtn onClick={() => update(p.id, (prj) => ({ ...prj, risks: prj.risks.filter((_, idx) => idx !== i) }))} /></Td>
+                </tr>
+              )
+            })}
             {p.risks.length === 0 && <tr><Td className="text-muted">No risks logged yet.</Td></tr>}
           </tbody>
         </table>
         <div className="border-t border-line p-4">
           <InlineAddForm addLabel="＋ Log risk"
             fields={[
-              { key: 'risk', placeholder: 'Risk', width: '190px' },
-              { key: 'probability', type: 'select', options: ['Low', 'Medium', 'High'], placeholder: 'Probability' },
-              { key: 'impact', type: 'select', options: ['Low', 'Medium', 'High'], placeholder: 'Impact' },
-              { key: 'mitigation', placeholder: 'Mitigation', width: '170px' },
-              { key: 'owner', placeholder: 'Owner', width: '140px' },
+              { key: 'risk', placeholder: 'Risk description', width: '200px' },
+              { key: 'probability', type: 'select', options: ['1', '2', '3', '4', '5'], placeholder: 'Probability' },
+              { key: 'impact', type: 'select', options: ['1', '2', '3', '4', '5'], placeholder: 'Impact' },
+              { key: 'mitigation', placeholder: 'Mitigation action', width: '170px' },
+              { key: 'owner', placeholder: 'Owner', width: '130px' },
+              { key: 'status', type: 'select', options: ['Open', 'Mitigating', 'Monitoring', 'Closed'], placeholder: 'Status' },
             ]}
-            onAdd={(v) => update(p.id, (prj) => ({ ...prj, risks: [...prj.risks, { risk: v.risk, probability: v.probability as Risk['probability'], impact: v.impact as Risk['impact'], mitigation: v.mitigation, owner: v.owner }] }))}
+            onAdd={(v) => update(p.id, (prj) => ({ ...prj, risks: [...prj.risks, { id: nextId(), risk: v.risk, probability: Number(v.probability), impact: Number(v.impact), mitigation: v.mitigation, owner: v.owner, status: v.status as RiskStatus }] }))}
           />
         </div>
       </Card>
@@ -98,7 +113,7 @@ export function RisksPage() {
             {p.assumptions.map((a, i) => (
               <tr key={i} className="border-b border-line last:border-0">
                 <Td className="font-semibold">{a.text}</Td><Td className="text-muted">{a.owner}</Td>
-                <Td><Chip tone={a.status === 'Validated' ? 'green' : a.status === 'Rejected' ? 'red' : 'amber'}>{a.status}</Chip></Td>
+                <Td><Pill tone={a.status === 'Validated' ? 'bg-green-soft text-green' : a.status === 'Rejected' ? 'bg-red-soft text-red' : 'bg-amber-soft text-amber'}>{a.status}</Pill></Td>
                 <Td><RemoveBtn onClick={() => update(p.id, (prj) => ({ ...prj, assumptions: prj.assumptions.filter((_, idx) => idx !== i) }))} /></Td>
               </tr>
             ))}

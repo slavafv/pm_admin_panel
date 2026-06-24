@@ -1,5 +1,6 @@
 import type { Project } from '../data/types'
 import { calLabel, budgetVariance } from './metrics'
+import { riskScore } from './risk'
 
 export interface Alert {
   level: 'risk' | 'warn'
@@ -17,31 +18,29 @@ export interface Alert {
 export function deriveAlerts(p: Project): Alert[] {
   const out: Alert[] = []
 
-  // Equipment whose lease / service / certification ends before its assigned phase finishes
+  // Equipment issues — one alert per unit, combining lease-expiry + overdue maintenance
   for (const e of p.equipment) {
-    if (e.serviceUntilMonth == null) continue
     const phase = p.phases.find((ph) => ph.name === e.phase)
     const needsUntil = phase ? phase.endMonth : p.durationMonths - 1
-    if (e.serviceUntilMonth < needsUntil) {
-      out.push({
-        level: 'warn',
-        area: 'Equipment',
-        text: `${e.name} service/lease ends ${calLabel(p, e.serviceUntilMonth)}, before ${e.phase} finishes (${calLabel(p, needsUntil)}).`,
-        recommendation: 'Schedule renewal or replacement ahead of that date.',
-      })
+    const expiring = e.serviceUntilMonth != null && e.serviceUntilMonth < needsUntil
+    const overdue = e.maintenance === 'Overdue'
+    if (!expiring && !overdue) continue
+    const texts: string[] = []
+    const recs: string[] = []
+    if (overdue) {
+      texts.push('maintenance is overdue')
+      recs.push('service it before further use')
     }
-  }
-
-  // Equipment with overdue maintenance
-  for (const e of p.equipment) {
-    if (e.maintenance === 'Overdue') {
-      out.push({
-        level: 'risk',
-        area: 'Equipment',
-        text: `${e.name} maintenance is overdue.`,
-        recommendation: 'Take it offline and service before further use.',
-      })
+    if (expiring) {
+      texts.push(`service/lease ends ${calLabel(p, e.serviceUntilMonth!)}, before ${e.phase} finishes (${calLabel(p, needsUntil)})`)
+      recs.push('schedule renewal/replacement ahead of that date')
     }
+    out.push({
+      level: overdue ? 'risk' : 'warn',
+      area: 'Equipment',
+      text: `${e.name}: ${texts.join('; ')}.`,
+      recommendation: recs.map((r) => r[0].toUpperCase() + r.slice(1)).join('. ') + '.',
+    })
   }
 
   // People on leave / limited availability
@@ -69,13 +68,13 @@ export function deriveAlerts(p: Project): Alert[] {
     }
   }
 
-  // High-probability, high-impact risks
+  // High-severity active risks (score = P×I ≥ 15)
   for (const r of p.risks) {
-    if (r.probability === 'High' && r.impact === 'High') {
+    if (r.status !== 'Closed' && riskScore(r) >= 15) {
       out.push({
         level: 'risk',
         area: 'Risk',
-        text: `High-severity risk: ${r.risk}.`,
+        text: `High-severity risk ${r.id}: ${r.risk} (score ${riskScore(r)}).`,
         recommendation: r.mitigation || 'Define a mitigation and assign an owner.',
       })
     }
@@ -89,17 +88,6 @@ export function deriveAlerts(p: Project): Alert[] {
       area: 'Budget',
       text: `Spend is ahead of plan by ${Math.abs(v.underBy / 1_000_000).toFixed(1)}M AED.`,
       recommendation: 'Review cost drivers and forecast against contingency.',
-    })
-  }
-
-  // Open higher-severity issues
-  const med = p.issues.filter((i) => i.severity !== 'low').length
-  if (med > 0) {
-    out.push({
-      level: 'warn',
-      area: 'Schedule',
-      text: `${med} open issue${med === 1 ? '' : 's'} of medium+ severity.`,
-      recommendation: 'Work the issue log down before the next milestone.',
     })
   }
 

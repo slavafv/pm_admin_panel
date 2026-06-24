@@ -115,12 +115,20 @@ export function ResourcesPage() {
                     </select>
                   </Td>
                   <Td>
-                    <div className="flex items-center gap-2">
-                      <span className={`w-14 text-sm font-semibold ${over ? 'text-red' : 'text-ink'}`}>{fte} FTE</span>
-                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#eef0f4]">
-                        <div className={`h-full rounded-full ${over ? 'bg-red' : 'bg-green'}`} style={{ width: `${Math.min(100, (fte / (m.capacity || 1)) * 100)}%` }} />
+                    {av === 'On leave' ? (
+                      <div className="flex items-center gap-2">
+                        <span className="w-14 text-sm font-semibold text-muted">0 FTE</span>
+                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#eef0f4]" />
+                        <span className="text-[11px] text-red">on leave</span>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className={`w-14 text-sm font-semibold ${over ? 'text-red' : 'text-ink'}`}>{fte} FTE</span>
+                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#eef0f4]">
+                          <div className={`h-full rounded-full ${over ? 'bg-red' : 'bg-green'}`} style={{ width: `${Math.min(100, (fte / (m.capacity || 1)) * 100)}%` }} />
+                        </div>
+                      </div>
+                    )}
                   </Td>
                   <Td><RemoveBtn onClick={() => removeTeamMember(p.id, m.id)} disabled={m.id === p.pmId} title={m.id === p.pmId ? 'The project manager cannot be removed' : 'Remove member'} /></Td>
                 </tr>

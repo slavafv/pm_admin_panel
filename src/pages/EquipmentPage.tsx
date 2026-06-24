@@ -1,20 +1,23 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { Card, Avatar, Pill, Button } from '../components/ui/primitives'
 import { STATUS_TONE, MAINT_TONE, utilColor, utilText } from '../lib/equipmentStyle'
 import { aggregateEquipment, fleetStats } from '../lib/workspace'
 import { buildCsv, triggerDownload } from '../lib/download'
+import { canSeeWorkspaceTools } from '../lib/rbac'
 
 const TABS = ['all', 'Available', 'In use', 'Maintenance'] as const
 
 export function EquipmentPage() {
   const projects = useStore((s) => s.projects)
+  const role = useStore((s) => s.role)
   const [filter, setFilter] = useState<(typeof TABS)[number]>('all')
   const [q, setQ] = useState('')
 
   const rows = useMemo(() => aggregateEquipment(projects), [projects])
   const stats = useMemo(() => fleetStats(rows), [rows])
+  const allowed = canSeeWorkspaceTools(role)
   const shown = rows.filter((r) => {
     const okFilter = filter === 'all' || r.equipment.status === filter
     const okSearch = !q || r.equipment.name.toLowerCase().includes(q.toLowerCase()) || r.equipment.category.toLowerCase().includes(q.toLowerCase())
@@ -31,6 +34,8 @@ export function EquipmentPage() {
     ]
     triggerDownload(buildCsv(data), 'RAK_EquipmentFleet.csv')
   }
+
+  if (!allowed) return <Navigate to="/" replace />
 
   return (
     <div>

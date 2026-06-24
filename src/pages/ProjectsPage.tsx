@@ -7,6 +7,7 @@ import { StatusBadge } from '../components/ui/StatusBadge'
 import { CreateProjectModal } from '../components/CreateProjectModal'
 import { aed } from '../lib/format'
 import { classification, spentPct, startLabel, endLabel, daysRemaining } from '../lib/project'
+import { canCreateProject, visibleProjects } from '../lib/rbac'
 
 const FILTERS: { key: ProjectStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -57,20 +58,35 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
           </div>
         )}
         <div className="flex items-center gap-5">
-          {/* Health (RAG) */}
+          {/* Completed projects show outcome, not a live health flag */}
           <div className="text-right">
-            <div className="flex items-center justify-end gap-1.5 text-xs font-semibold text-ink">
-              <RagDot rag={project.health} /> {HEALTH_LABEL[project.health]}
-            </div>
-            <div className="text-[11px] text-muted">Health</div>
+            {project.status === 'completed' ? (
+              <>
+                <div className="flex items-center justify-end gap-1.5 text-xs font-semibold text-green">✅ Delivered</div>
+                <div className="text-[11px] text-muted">Outcome</div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-end gap-1.5 text-xs font-semibold text-ink">
+                  <RagDot rag={project.health} /> {HEALTH_LABEL[project.health]}
+                </div>
+                <div className="text-[11px] text-muted">Health</div>
+              </>
+            )}
           </div>
-          {/* Budget spent % */}
+          {/* Budget — TBC before the project starts */}
           <div className="w-28">
-            <div className="mb-1 flex items-center justify-between text-[11px]">
-              <span className="text-muted">Budget</span>
-              <span className="font-semibold text-ink">{pct.toFixed(pct < 10 ? 1 : 0)}%</span>
-            </div>
-            <ProgressBar value={pct} tone={pct > 90 ? 'amber' : 'green'} />
+            {project.status === 'presale' ? (
+              <div className="text-right text-[11px] text-muted">Budget<br /><span className="font-semibold text-ink">TBC</span></div>
+            ) : (
+              <>
+                <div className="mb-1 flex items-center justify-between text-[11px]">
+                  <span className="text-muted">Budget</span>
+                  <span className="font-semibold text-ink">{pct.toFixed(pct < 10 ? 1 : 0)}%</span>
+                </div>
+                <ProgressBar value={pct} tone={pct > 100 ? 'red' : 'green'} />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -80,19 +96,23 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
 
 export function ProjectsPage() {
   const projects = useStore((s) => s.projects)
+  const role = useStore((s) => s.role)
   const navigate = useNavigate()
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all')
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const [page, setPage] = useState(0)
 
+  // RBAC: PMs see only the projects they manage
+  const scoped = useMemo(() => visibleProjects(role, projects), [role, projects])
+
   const filtered = useMemo(() => {
-    return projects.filter((c) => {
+    return scoped.filter((c) => {
       const okFilter = filter === 'all' || c.status === filter
       const okSearch = !search || c.name.toLowerCase().includes(search.toLowerCase())
       return okFilter && okSearch
     })
-  }, [projects, filter, search])
+  }, [scoped, filter, search])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(page, pageCount - 1)
@@ -117,7 +137,7 @@ export function ProjectsPage() {
             placeholder="Search projects…"
             className="w-64 rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm outline-none focus:border-navy"
           />
-          <Button onClick={() => setCreating(true)}>＋ Create project</Button>
+          {canCreateProject(role) && <Button onClick={() => setCreating(true)}>＋ Create project</Button>}
         </div>
       </div>
 
