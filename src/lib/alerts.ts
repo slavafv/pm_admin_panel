@@ -17,6 +17,7 @@ export interface Alert {
  */
 export function deriveAlerts(p: Project): Alert[] {
   const out: Alert[] = []
+  if (p.status === 'completed') return out // delivered projects don't raise live alerts
 
   // Equipment issues — one alert per unit, combining lease-expiry + overdue maintenance
   for (const e of p.equipment) {
@@ -100,6 +101,17 @@ const HEALTH_EXPLAIN: Record<Project['health'], string> = {
   red: 'At risk — material problems threaten scope, schedule or budget.',
 }
 
+/**
+ * Health actually shown to users = the stored baseline, raised to amber if any
+ * live alert exists. This keeps the health flag consistent with the Attention
+ * block everywhere (a green project with an overdue-maintenance alert reads amber).
+ */
+export function effectiveHealth(p: Project): Project['health'] {
+  if (p.status === 'completed') return 'green'
+  if (p.health === 'red') return 'red'
+  return deriveAlerts(p).length > 0 ? 'amber' : p.health
+}
+
 export function healthExplanation(p: Project): string {
-  return HEALTH_EXPLAIN[p.health]
+  return HEALTH_EXPLAIN[effectiveHealth(p)]
 }

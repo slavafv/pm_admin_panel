@@ -7,7 +7,7 @@ import { canSeeWorkspaceTools } from '../lib/rbac'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const YEAR = 2026
-const NOW_PCT = ((1 + 20 / 28) / 12) * 100 // demo "today" ≈ 20 Feb 2026
+const NOW_PCT = ((5 + 25 / 30) / 12) * 100 // demo "today" ≈ 25 Jun 2026
 const LABEL_W = 220
 
 const AV_TONE: Record<string, string> = {

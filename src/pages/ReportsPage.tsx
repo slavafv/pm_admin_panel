@@ -53,7 +53,7 @@ function buildRows(p: Project, params: Section[]): (string | number)[][] {
   return rows
 }
 
-const DEMO_DATE = '20 Feb 2026'
+const DEMO_DATE = '25 Jun 2026'
 
 function download(p: Project, params: Section[], format: 'PDF' | 'CSV', name: string) {
   if (format === 'PDF') triggerDownload(buildSimplePdf(name, buildLines(p, params)), `${slug(p)}_${name.replace(/\s+/g, '')}.pdf`)

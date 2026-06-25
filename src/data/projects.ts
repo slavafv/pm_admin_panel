@@ -71,12 +71,12 @@ export const rakProject: Project = {
   startMonthIndex: 0,
   durationMonths: 36,
   totalBudget: 387_000_000,
-  spentBudget: 4_200_000,
+  spentBudget: 42_000_000,
   pmId: 'ahmed',
   tags: ['Infrastructure', 'Water', 'Sustainability'],
   status: 'delivery',
-  overallProgress: 8,
-  currentPhaseId: 'design',
+  overallProgress: 18,
+  currentPhaseId: 'construction',
   health: 'amber',
   healthNote: 'Needs attention',
 
@@ -175,16 +175,16 @@ export const rakProject: Project = {
       name: 'Design & permitting',
       startMonth: 0,
       endMonth: 4,
-      progressPct: 35,
-      status: 'in_progress',
+      progressPct: 100,
+      status: 'complete',
     },
     {
       id: 'construction',
       name: 'Construction',
       startMonth: 5,
       endMonth: 32,
-      progressPct: 0,
-      status: 'not_started',
+      progressPct: 6,
+      status: 'in_progress',
     },
     {
       id: 'commissioning',
@@ -196,9 +196,10 @@ export const rakProject: Project = {
     },
   ],
 
+  // As of Jun 2026: approval granted, construction just started.
   milestones: [
-    { id: 'm1', name: 'Federal env. approval', month: 2, rag: 'amber', state: 'pending' },
-    { id: 'm2', name: 'Construction start', month: 5, rag: 'green', state: 'on_track' },
+    { id: 'm1', name: 'Federal env. approval', month: 2, rag: 'green', state: 'done' },
+    { id: 'm2', name: 'Construction start', month: 5, rag: 'green', state: 'done' },
     { id: 'm3', name: '50% capacity test', month: 23, rag: 'amber', state: 'scheduled' },
     { id: 'm4', name: 'Full commissioning', month: 35, rag: 'green', state: 'scheduled' },
   ],
@@ -241,15 +242,15 @@ export const rakProject: Project = {
     { title: 'Phase 1 budget reconciliation', assigneeId: 'fatima', due: '05 Jul 2026' },
   ],
 
-  // Cumulative planned vs actual spend (AED millions). "Now" = Feb 2026, so
-  // actuals exist for Jan–Feb only; Feb actual 4.2M vs planned 4.8M = under by 0.6M.
+  // Cumulative planned vs actual spend (AED millions). "Now" = Jun 2026; actuals
+  // run Jan–Jun. Jun actual 42M vs planned 45M = under plan by ~3M.
   burn: [
-    { month: 'Jan', planned: 2.0, actual: 1.9 },
-    { month: 'Feb', planned: 4.8, actual: 4.2 },
-    { month: 'Mar', planned: 7.5, actual: null },
-    { month: 'Apr', planned: 10.0, actual: null },
-    { month: 'May', planned: 12.5, actual: null },
-    { month: 'Jun', planned: 15.0, actual: null },
+    { month: 'Jan', planned: 6, actual: 5 },
+    { month: 'Feb', planned: 13, actual: 12 },
+    { month: 'Mar', planned: 21, actual: 19 },
+    { month: 'Apr', planned: 30, actual: 28 },
+    { month: 'May', planned: 38, actual: 36 },
+    { month: 'Jun', planned: 45, actual: 42 },
   ],
 
   kpis: [
@@ -432,9 +433,15 @@ interface MakeArgs {
   equipment?: Equipment[]
 }
 
+const NOW_ABS = 2026 * 12 + 5 // demo "today" = Jun 2026
+
 function makeProject(a: MakeArgs): Project {
   const phases = genericPhases(a.durationMonths)
   const allComplete = a.status === 'completed'
+  const startAbs = a.startYear * 12 + a.startMonthIndex
+  const endAbs = startAbs + a.durationMonths - 1
+  const kickoffDone = allComplete || startAbs <= NOW_ABS
+  const completionDone = allComplete || endAbs <= NOW_ABS
   const builtPhases = phases.map((ph, i) => {
     if (allComplete) return { ...ph, progressPct: 100, status: 'complete' as const }
     if (a.status === 'delivery' && i === 0) return { ...ph, progressPct: a.overallProgress > 0 ? 40 : 0, status: 'in_progress' as const }
@@ -482,8 +489,8 @@ function makeProject(a: MakeArgs): Project {
     assumptions: [],
     phases: builtPhases,
     milestones: [
-      { id: 'k', name: 'Kickoff', month: builtPhases[0].startMonth, rag: 'green', state: allComplete ? 'done' : 'scheduled' },
-      { id: 'c', name: 'Completion', month: builtPhases[builtPhases.length - 1].endMonth, rag: 'green', state: allComplete ? 'done' : 'scheduled' },
+      { id: 'k', name: 'Kickoff', month: builtPhases[0].startMonth, rag: 'green', state: kickoffDone ? 'done' : 'scheduled' },
+      { id: 'c', name: 'Completion', month: builtPhases[builtPhases.length - 1].endMonth, rag: 'green', state: completionDone ? 'done' : 'scheduled' },
     ],
     issues: [],
     tasks: { todo: allComplete ? 0 : 8, inProgress: a.status === 'delivery' ? 4 : 0, done: allComplete ? 30 : 0 },

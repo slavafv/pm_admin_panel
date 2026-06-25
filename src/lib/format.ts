@@ -34,8 +34,8 @@ export function pct(value: number, digits = 0): string {
  * consistent: design phase ~35% done, AED 4.2M spent of 4.8M planned-to-date,
  * federal approval (Mar 2026) still upcoming.
  */
-export const DEMO_TODAY = new Date(2026, 1, 20) // 20 Feb 2026
-export const DEMO_NOW_MONTH = 1 // Feb 2026, index from Jan 2026
+export const DEMO_TODAY = new Date(2026, 5, 25) // 25 Jun 2026
+export const DEMO_NOW_MONTH = 5 // Jun 2026, index from Jan 2026
 
 /** Days from the demo "today" to a target month start. */
 export function daysToMonth(monthIndex: number, startYear = 2026): number {

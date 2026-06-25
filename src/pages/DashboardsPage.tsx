@@ -6,8 +6,9 @@ import { Card, CardHead, RagDot, ProgressBar, Avatar, Chip, Pill, Button } from 
 import { BudgetDonut, BurnChart } from '../components/dashboards/charts'
 import { aed } from '../lib/format'
 import { nextMilestone, budgetVariance, issueCounts, calLabel, calDays } from '../lib/metrics'
-import { deriveAlerts } from '../lib/alerts'
+import { deriveAlerts, effectiveHealth } from '../lib/alerts'
 import { riskScore, severityOf, SEVERITY_TONE, projectRiskLevel } from '../lib/risk'
+import { AttentionCard } from '../components/AttentionCard'
 import type { Project, RAG } from '../data/types'
 
 const RAG_HEX: Record<RAG, string> = { green: '#4caf82', amber: '#f0a830', red: '#e2574c' }
@@ -51,6 +52,8 @@ function DirectorGeneral({ p }: { p: Project }) {
     { label: 'Risk', rag: riskRag },
     { label: 'Partners', rag: partnersRag },
   ]
+  const health = effectiveHealth(p)
+  const healthNote = health === 'green' ? 'On track' : health === 'red' ? 'At risk' : 'Needs attention'
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card>
@@ -58,12 +61,12 @@ function DirectorGeneral({ p }: { p: Project }) {
         <div className="flex items-center gap-5 px-5 pb-5">
           <div
             className="grid h-24 w-24 shrink-0 place-items-center rounded-full text-white"
-            style={{ background: RAG_HEX[p.health] }}
+            style={{ background: RAG_HEX[health] }}
           >
-            <span className="text-2xl">{p.health === 'green' ? '✓' : '!'}</span>
+            <span className="text-2xl">{health === 'green' ? '✓' : '!'}</span>
           </div>
           <div className="flex-1">
-            <div className="mb-2 text-sm font-semibold text-ink">{p.healthNote}</div>
+            <div className="mb-2 text-sm font-semibold text-ink">{healthNote}</div>
             <div className="grid grid-cols-2 gap-2">
               {sub.map((s) => (
                 <div key={s.label} className="flex items-center gap-2 text-sm">
@@ -359,6 +362,7 @@ export function DashboardsPage() {
   return (
     <div className="grid gap-4">
       <RoleBanner />
+      <AttentionCard p={p} />
       {role === 'director_general' && <DirectorGeneral p={p} />}
       {role === 'department_head' && <DepartmentHead p={p} />}
       {role === 'project_manager' && <ProjectManager p={p} />}

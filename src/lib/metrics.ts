@@ -20,6 +20,7 @@ export function nextMilestone(p: Project): { milestone: Milestone; days: number 
   const upcoming = p.milestones
     .filter((m) => m.state !== 'done')
     .map((m) => ({ milestone: m, days: calDays(p, m.month) }))
+    .filter((x) => x.days >= 0) // only genuinely upcoming — never a past milestone
     .sort((a, b) => a.days - b.days)
   return upcoming[0] ?? null
 }

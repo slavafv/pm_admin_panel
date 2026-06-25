@@ -57,10 +57,11 @@ describe('store', () => {
   })
 
   it('markPhaseComplete recomputes overall progress', () => {
-    useStore.getState().markPhaseComplete('rak-wwtp-1', 'design')
+    useStore.getState().markPhaseComplete('rak-wwtp-1', 'commissioning')
     const p = useStore.getState().getProject('rak-wwtp-1')!
-    expect(p.phases.find((ph) => ph.id === 'design')!.status).toBe('complete')
-    expect(p.overallProgress).toBe(33)
+    expect(p.phases.find((ph) => ph.id === 'commissioning')!.status).toBe('complete')
+    // design 100 + construction 6 + commissioning 100 → round(68.7) = 69
+    expect(p.overallProgress).toBe(69)
   })
 
   it('add/remove team member mutates the project team', () => {

@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore'
 import type { Project } from '../data/types'
 import { RagDot } from '../components/ui/primitives'
 import { STATUS_META, spentPct } from '../lib/project'
-import { deriveAlerts } from '../lib/alerts'
+import { deriveAlerts, effectiveHealth } from '../lib/alerts'
 import { canOpenProject } from '../lib/rbac'
 
 const HEALTH_LABEL = { green: 'On track', amber: 'Needs attention', red: 'At risk' } as const
@@ -45,8 +45,9 @@ export function ProjectLayout() {
 
   const pct = spentPct(project)
   const completed = project.status === 'completed'
+  const health = effectiveHealth(project)
   const alerts = completed ? [] : deriveAlerts(project)
-  const whyTitle = project.health !== 'green' && alerts.length ? alerts.map((a) => `• ${a.text}`).join('\n') : undefined
+  const whyTitle = health !== 'green' && alerts.length ? alerts.map((a) => `• ${a.text}`).join('\n') : undefined
 
   return (
     <div>
@@ -73,7 +74,7 @@ export function ProjectLayout() {
           </Indicator>
         ) : (
           <Indicator label="Health" title={whyTitle}>
-            <RagDot rag={project.health} /> {HEALTH_LABEL[project.health]}
+            <RagDot rag={health} /> {HEALTH_LABEL[health]}
             {whyTitle && <span className="text-muted">ⓘ</span>}
           </Indicator>
         )}

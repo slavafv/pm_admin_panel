@@ -27,29 +27,29 @@ describe('format helpers', () => {
   })
 })
 
-describe('metrics', () => {
+describe('metrics (RAK baseline as of Jun 2026)', () => {
   it('finds the current phase', () => {
-    expect(currentPhase(rakProject).id).toBe('design')
+    expect(currentPhase(rakProject).id).toBe('construction')
   })
-  it('next milestone is the earliest non-done', () => {
+  it('next milestone is the earliest FUTURE non-done one (never negative)', () => {
     const next = nextMilestone(rakProject)
-    expect(next?.milestone.id).toBe('m1')
+    expect(next?.milestone.id).toBe('m3') // m1/m2 are done/past
     expect(next?.days).toBeGreaterThan(0)
   })
   it('team capacity sums FTE for the current phase', () => {
     const cap = teamCapacity(rakProject)
-    // design phase: 1 + 0.5 + 0.5 + 0.5 = 2.5 used, 4 available
-    expect(cap.used).toBeCloseTo(2.5)
+    // construction phase: 1 + 0.5 + 1 + 0.5 = 3.0 used, 4 available
+    expect(cap.used).toBeCloseTo(3.0)
     expect(cap.available).toBeCloseTo(4)
   })
   it('budget is under plan', () => {
     const v = budgetVariance(rakProject)
     expect(v.underBy).toBeGreaterThan(0)
-    expect(v.planned).toBe(4_800_000)
-    expect(v.actual).toBe(4_200_000)
+    expect(v.planned).toBe(45_000_000)
+    expect(v.actual).toBe(42_000_000)
   })
-  it('spent percent is small', () => {
-    expect(spentPct(rakProject)).toBeCloseTo(1.085, 2)
+  it('spent percent reflects ~11%', () => {
+    expect(spentPct(rakProject)).toBeCloseTo(10.85, 1)
   })
   it('issue counts tally by severity and category', () => {
     const c = issueCounts(rakProject)

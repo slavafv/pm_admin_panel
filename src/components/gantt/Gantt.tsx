@@ -5,7 +5,7 @@ import { useStore } from '../../store/useStore'
 
 const MIN_COL = 26 // min px per month before horizontal scroll kicks in
 const LABEL_W = 184
-const DEMO_NOW_ABS = 2026 * 12 + 1 // demo "today" = Feb 2026
+const DEMO_NOW_ABS = 2026 * 12 + 5 // demo "today" = Jun 2026
 
 const RAG_HEX = { green: '#4caf82', amber: '#f0a830', red: '#e2574c' }
 

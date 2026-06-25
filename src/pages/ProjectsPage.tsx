@@ -8,6 +8,7 @@ import { CreateProjectModal } from '../components/CreateProjectModal'
 import { aed } from '../lib/format'
 import { classification, spentPct, startLabel, endLabel, daysRemaining } from '../lib/project'
 import { canCreateProject, visibleProjects } from '../lib/rbac'
+import { effectiveHealth } from '../lib/alerts'
 
 const FILTERS: { key: ProjectStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -68,7 +69,7 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
             ) : (
               <>
                 <div className="flex items-center justify-end gap-1.5 text-xs font-semibold text-ink">
-                  <RagDot rag={project.health} /> {HEALTH_LABEL[project.health]}
+                  <RagDot rag={effectiveHealth(project)} /> {HEALTH_LABEL[effectiveHealth(project)]}
                 </div>
                 <div className="text-[11px] text-muted">Health</div>
               </>

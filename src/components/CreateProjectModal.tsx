@@ -17,14 +17,13 @@ const CONTRACTS = [
 ]
 const DOMAINS = ['Water', 'Energy', 'Urban Development', 'Transport', 'Buildings', 'Sustainability']
 
-// Preset delivery stages the PM can toggle on/off (with a default length).
+// Preset construction/infrastructure stages the PM can toggle on/off.
 const STAGE_PRESETS: { name: string; months: number }[] = [
-  { name: 'Pre-sale', months: 1 },
-  { name: 'Discovery', months: 2 },
-  { name: 'MVP', months: 4 },
-  { name: 'MVP 2', months: 3 },
-  { name: 'Hardening', months: 2 },
-  { name: 'Tech support', months: 6 },
+  { name: 'Design', months: 4 },
+  { name: 'Permitting', months: 3 },
+  { name: 'Construction', months: 18 },
+  { name: 'Commissioning', months: 3 },
+  { name: 'Handover', months: 2 },
 ]
 
 const inputCls =

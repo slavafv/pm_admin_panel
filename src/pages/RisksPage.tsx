@@ -1,9 +1,13 @@
+import { useState } from 'react'
 import { useProject } from './ProjectLayout'
 import { useStore } from '../store/useStore'
-import { Card, Pill, RagDot } from '../components/ui/primitives'
-import { InlineAddForm } from '../components/ui/InlineAddForm'
+import { Card, Pill, RagDot, Button } from '../components/ui/primitives'
+import { RecordFormModal, type FormField } from '../components/ui/RecordFormModal'
 import { riskScore, severityOf, SEVERITY_TONE, STATUS_TONE } from '../lib/risk'
 import type { RAG, RiskStatus } from '../data/types'
+
+const DEPENDENCY_TYPES = ['External permit', 'Internal permit', 'Contract', 'Supply', 'Regulatory', 'Technical']
+const RAG_OPTIONS = ['green', 'amber', 'red']
 
 function Th({ children }: { children?: React.ReactNode }) {
   return <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted">{children}</th>
@@ -21,11 +25,35 @@ function RemoveBtn({ onClick }: { onClick: () => void }) {
 export function RisksPage() {
   const p = useProject()
   const update = useStore((s) => s.updateProject)
+  const [openForm, setOpenForm] = useState<'risk' | 'dependency' | 'assumption' | null>(null)
+
+  const owners = p.team.map((t) => t.name)
 
   function nextId(): string {
     const n = p.risks.length + 1
     return `R-${String(n).padStart(2, '0')}`
   }
+
+  const riskFields: FormField[] = [
+    { key: 'risk', label: 'Risk description', type: 'textarea', placeholder: 'Describe the risk…' },
+    { key: 'probability', label: 'Probability (1–5)', type: 'select', options: ['1', '2', '3', '4', '5'], default: '3' },
+    { key: 'impact', label: 'Impact (1–5)', type: 'select', options: ['1', '2', '3', '4', '5'], default: '3' },
+    { key: 'mitigation', label: 'Mitigation action', type: 'textarea', placeholder: 'How will it be mitigated?' },
+    { key: 'owner', label: 'Owner', type: 'select', options: owners },
+    { key: 'status', label: 'Status', type: 'select', options: ['Open', 'Mitigating', 'Monitoring', 'Closed'] },
+  ]
+  const depFields: FormField[] = [
+    { key: 'dependency', label: 'Dependency', type: 'text', placeholder: 'What must happen…' },
+    { key: 'type', label: 'Type', type: 'select', options: DEPENDENCY_TYPES },
+    { key: 'owner', label: 'Owner', type: 'select', options: owners },
+    { key: 'requiredBy', label: 'Required by', type: 'text', placeholder: 'e.g. Before construction start' },
+    { key: 'status', label: 'Status', type: 'select', options: RAG_OPTIONS },
+  ]
+  const assumptionFields: FormField[] = [
+    { key: 'text', label: 'Assumption', type: 'textarea', placeholder: 'Something assumed to be true…' },
+    { key: 'owner', label: 'Owner', type: 'select', options: owners },
+    { key: 'status', label: 'Status', type: 'select', options: ['Open', 'Validated', 'Rejected'] },
+  ]
 
   return (
     <div className="grid gap-5">
@@ -60,17 +88,7 @@ export function RisksPage() {
           </tbody>
         </table>
         <div className="border-t border-line p-4">
-          <InlineAddForm addLabel="＋ Log risk"
-            fields={[
-              { key: 'risk', placeholder: 'Risk description', width: '200px' },
-              { key: 'probability', type: 'select', options: ['1', '2', '3', '4', '5'], placeholder: 'Probability' },
-              { key: 'impact', type: 'select', options: ['1', '2', '3', '4', '5'], placeholder: 'Impact' },
-              { key: 'mitigation', placeholder: 'Mitigation action', width: '170px' },
-              { key: 'owner', placeholder: 'Owner', width: '130px' },
-              { key: 'status', type: 'select', options: ['Open', 'Mitigating', 'Monitoring', 'Closed'], placeholder: 'Status' },
-            ]}
-            onAdd={(v) => update(p.id, (prj) => ({ ...prj, risks: [...prj.risks, { id: nextId(), risk: v.risk, probability: Number(v.probability), impact: Number(v.impact), mitigation: v.mitigation, owner: v.owner, status: v.status as RiskStatus }] }))}
-          />
+          <Button variant="soft" onClick={() => setOpenForm('risk')}>＋ Log risk</Button>
         </div>
       </Card>
 
@@ -90,16 +108,7 @@ export function RisksPage() {
           </tbody>
         </table>
         <div className="border-t border-line p-4">
-          <InlineAddForm addLabel="＋ Add dependency"
-            fields={[
-              { key: 'dependency', placeholder: 'Dependency', width: '180px' },
-              { key: 'type', placeholder: 'Type', width: '120px' },
-              { key: 'owner', placeholder: 'Owner', width: '140px' },
-              { key: 'requiredBy', placeholder: 'Required by', width: '150px' },
-              { key: 'status', type: 'select', options: ['green', 'amber', 'red'], placeholder: 'Status' },
-            ]}
-            onAdd={(v) => update(p.id, (prj) => ({ ...prj, dependencies: [...prj.dependencies, { dependency: v.dependency, type: v.type, owner: v.owner, requiredBy: v.requiredBy, status: v.status as RAG }] }))}
-          />
+          <Button variant="soft" onClick={() => setOpenForm('dependency')}>＋ Add dependency</Button>
         </div>
       </Card>
 
@@ -121,16 +130,22 @@ export function RisksPage() {
           </tbody>
         </table>
         <div className="border-t border-line p-4">
-          <InlineAddForm addLabel="＋ Add assumption"
-            fields={[
-              { key: 'text', placeholder: 'Assumption', width: '240px' },
-              { key: 'owner', placeholder: 'Owner', width: '140px' },
-              { key: 'status', type: 'select', options: ['Open', 'Validated', 'Rejected'], placeholder: 'Status' },
-            ]}
-            onAdd={(v) => update(p.id, (prj) => ({ ...prj, assumptions: [...prj.assumptions, { text: v.text, owner: v.owner, status: v.status as 'Open' | 'Validated' | 'Rejected' }] }))}
-          />
+          <Button variant="soft" onClick={() => setOpenForm('assumption')}>＋ Add assumption</Button>
         </div>
       </Card>
+
+      {openForm === 'risk' && (
+        <RecordFormModal title="Log a risk" submitLabel="Log risk" fields={riskFields} onClose={() => setOpenForm(null)}
+          onSubmit={(v) => update(p.id, (prj) => ({ ...prj, risks: [...prj.risks, { id: nextId(), risk: v.risk, probability: Number(v.probability), impact: Number(v.impact), mitigation: v.mitigation, owner: v.owner, status: v.status as RiskStatus }] }))} />
+      )}
+      {openForm === 'dependency' && (
+        <RecordFormModal title="Add a dependency" submitLabel="Add dependency" fields={depFields} onClose={() => setOpenForm(null)}
+          onSubmit={(v) => update(p.id, (prj) => ({ ...prj, dependencies: [...prj.dependencies, { dependency: v.dependency, type: v.type, owner: v.owner, requiredBy: v.requiredBy, status: v.status as RAG }] }))} />
+      )}
+      {openForm === 'assumption' && (
+        <RecordFormModal title="Add an assumption" submitLabel="Add assumption" fields={assumptionFields} onClose={() => setOpenForm(null)}
+          onSubmit={(v) => update(p.id, (prj) => ({ ...prj, assumptions: [...prj.assumptions, { text: v.text, owner: v.owner, status: v.status as 'Open' | 'Validated' | 'Rejected' }] }))} />
+      )}
     </div>
   )
 }
